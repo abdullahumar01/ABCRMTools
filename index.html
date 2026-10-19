@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ticket Workbench - One File</title>
+<style>
+    :root {
+        --bg: #e9edf2;
+        --side1: #ffffff;
+        --side2: #f6f8fa;
+        --card: #ffffff;
+        --card2: #f8fafc;
+        --line: #e2e8f0;
+        --line2: #cbd5e1;
+        --txt: #0f172a;
+        --txt2: #475569;
+        --txt3: #94a3b8;
+        --acc: #0891b2;
+        --acc2: #0e7490;
+        --accSoft: #ecfeff;
+        --ok: #059669;
+        --okSoft: #ecfdf5;
+        --warn: #b45309;
+        --warnSoft: #fffbeb;
+        --err: #dc2626;
+        --errSoft: #fef2f2;
+        --field: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--txt);
+        height: 100vh;
+        overflow: hidden;
+        font-size: 13px;
+    }
+    ::selection { background: var(--acc); color: #fff; }
+
+    .main-container { position: relative; width: 100%; height: 100vh; }
+    .crm-container { width: 100%; height: 100%; }
+    iframe { width: 100%; height: 100%; border: none; background: #fff; }
+
+    .sidebar {
+        position: absolute; left: 0; top: 0; bottom: 0; width: 250px;
+        background: linear-gradient(180deg, var(--side1) 0%, var(--side2) 100%);
+        border-right: 1px solid var(--line2);
+        box-shadow: 4px 0 18px rgba(15,23,42,.10);
+        display: flex; flex-direction: column;
+        z-index: 1000;
+    }
+    .sidebar-brand { padding: 14px 14px 12px; border-bottom: 1px solid var(--line); background: #fff; }
+    .brand-title { font-size: 15px; font-weight: 800; letter-spacing: 1.2px; color: var(--txt); display: flex; align-items: center; gap: 8px; }
+    .brand-title::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: linear-gradient(135deg, #22d3ee, var(--acc2)); box-shadow: 0 0 8px rgba(8,145,178,.5); }
+    .brand-sub { font-size: 10.5px; color: var(--txt3); margin-top: 3px; letter-spacing: .4px; }
+
+    .sidebar-scroll { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; padding: 10px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+    .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+    .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--txt3); }
+
+    .sidebar-footer { border-top: 1px solid var(--line); background: var(--card2); padding: 10px 14px; }
+    .foot-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--txt2); }
+    .foot-left { display: flex; align-items: center; gap: 7px; font-weight: 700; letter-spacing: .5px; }
+    .led-on { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 7px rgba(5,150,105,.6); }
+    .foot-clock { font-family: Consolas, monospace; color: var(--acc2); font-weight: 700; }
+    .foot-ver { font-size: 10px; color: var(--txt3); margin-top: 5px; letter-spacing: .3px; }
+
+    .control-box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(15,23,42,.08); flex-shrink: 0; }
+    .panel-header { margin: 0; padding: 9px 12px; font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--txt2); background: var(--card2); border-bottom: 1px solid var(--line); cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; transition: background .15s; }
+    .panel-header:hover { background: #eef2f7; color: var(--txt); }
+    .panel-chevron { font-size: 10px; color: var(--txt3); transition: color .15s; }
+    .panel-header:hover .panel-chevron { color: var(--acc); }
+    .panel-content { padding: 10px; display: flex; flex-direction: column; gap: 7px; max-height: 1000px; overflow-y: auto; transition: max-height .25s ease-out, padding .25s ease-out, opacity 0.2s; }
+    .control-box.collapsed .panel-content { max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; opacity: 0; }
+    .panel-content::-webkit-scrollbar { width: 5px; }
+    .panel-content::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+
+    input, select, textarea { width: 100%; background: var(--field); color: var(--txt); border: 1px solid var(--line2); border-radius: 8px; padding: 7px 9px; font-size: 12.5px; font-family: inherit; outline: none; transition: border-color .15s, box-shadow .15s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(8,145,178,.16); }
+    input::placeholder, textarea::placeholder { color: var(--txt3); }
+    input[readonly] { color: var(--txt2); background: var(--card2); }
+    textarea { height: 52px; resize: none; font-family: Consolas, monospace; font-size: 12px; }
+    select { cursor: pointer; }
+
+    button { border: none; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600; font-family: inherit; letter-spacing: .2px; cursor: pointer; transition: all .15s; color: #fff; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .calculate-btn, .start-btn { background: linear-gradient(180deg, #06b6d4, #0891b2); box-shadow: 0 2px 8px rgba(8,145,178,.30); }
+    .calculate-btn:hover, .start-btn:hover { background: linear-gradient(180deg, #22c3dd, #0aa0c6); }
+    .reset-btn { background: var(--errSoft); color: #b91c1c; border: 1px solid #fecaca; }
+    .reset-btn:hover { background: #fee2e2; color: #991b1b; }
+    .cancel-btn { background: var(--errSoft); color: #b91c1c; border: 1px solid #fecaca; font-size: 11px !important; padding: 5px 8px !important; margin-top: 2px; }
+    .cancel-btn:hover { background: #fee2e2; }
+    .copy-btn { background: var(--okSoft); color: #047857; border: 1px solid #a7f3d0; }
+    .copy-btn:hover { background: #d1fae5; color: #065f46; }
+    .convert-btn { background: linear-gradient(180deg, #8b5cf6, #7c3aed); box-shadow: 0 2px 8px rgba(124,58,237,.30); }
+    .convert-btn:hover { background: linear-gradient(180deg, #9d70f8, #8b5cf6); }
+
+    .flat-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--acc); color: var(--txt); padding: 10px; font-size: 12.5px; font-weight: 700; letter-spacing: .4px; border-radius: 10px; box-shadow: 0 1px 4px rgba(15,23,42,.08); flex-shrink: 0; }
+    .flat-btn:hover { background: #f1f5f9; border-color: var(--line2); }
+    .flat-btn .badge { background: var(--acc); color: #fff; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 10px; }
+
+    .quick-actions { display: flex; gap: 5px; margin-top: 2px; flex-wrap: wrap; }
+    .quick-action-btn { flex: 1; min-width: 60px; padding: 6px 2px; font-size: 10.5px; border-radius: 7px; text-align: center; line-height: 1.2; font-weight: 700; }
+    .work-completed-btn { background: linear-gradient(180deg, #34d399, #10b981); color: #06281c; }
+    .ticket-closed-btn { background: linear-gradient(180deg, #fbbf24, #f59e0b); color: #33200a; }
+    .updated-btn { background: linear-gradient(180deg, #60a5fa, #3b82f6); color: #0a1e33; }
+
+    .info-box { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 11.5px; color: var(--txt2); line-height: 1.5; }
+    .info-box b { color: var(--acc2); font-weight: 700; }
+    .mini-hint { font-size: 10px; color: var(--txt3); text-align: center; margin-top: -2px; }
+
+    .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+    .file-input-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .file-label { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 44px; padding: 8px; background: var(--card2); border: 1.5px dashed var(--line2); border-radius: 8px; font-size: 11.5px; font-weight: 600; color: var(--txt2); cursor: pointer; transition: all .15s; }
+    .file-label:hover, .file-label.dragover { border-color: var(--acc); color: var(--acc2); background: var(--accSoft); }
+
+    .progress-bar { width: 100%; height: 8px; border-radius: 4px; overflow: hidden; background: #eef2f6; border: 1px solid var(--line2); display: none; }
+    .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #0891b2, #22d3ee); transition: width .2s; }
+    .file-queue { background: var(--card2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px; max-height: 84px; overflow-y: auto; display: none; font-size: 11px; }
+    .file-queue.has-files { display: block; }
+    .file-queue::-webkit-scrollbar { width: 5px; }
+    .file-queue::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+    .fqi { display: flex; justify-content: space-between; align-items: center; padding: 2px 3px; color: var(--txt2); }
+    .fqi .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .fqi .s { font-size: 10px; font-weight: 800; margin-left: 5px; color: var(--txt3); }
+    .fqi .s.done { color: var(--ok); }
+    .fqi .s.active { color: var(--warn); }
+    .fqi .s.error { color: var(--err); }
+    .gif-actions { display: flex; gap: 6px; }
+    .gif-actions .convert-btn, .gif-actions .reset-btn { flex: 1; }
+
+    .refresh-btn { position: absolute; top: 10px; right: 12px; background: linear-gradient(180deg, #06b6d4, #0891b2); color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; z-index: 900; width: auto; box-shadow: 0 4px 14px rgba(8,145,178,.35); }
+    .refresh-btn:hover { background: linear-gradient(180deg, #22c3dd, #0aa0c6); }
+
+    .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-60px); background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 10px; min-width: 320px; max-width: 80vw; box-shadow: 0 12px 34px rgba(15,23,42,.22); z-index: 9999; opacity: 0; transition: all .3s cubic-bezier(.2,.8,.3,1.1); pointer-events: none; overflow: hidden; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.warn { border-left-color: #f59e0b; }
+    .toast.error { border-left-color: var(--err); }
+    .toast-title { font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ok); padding: 5px 14px 0; }
+    .toast.warn .toast-title { color: var(--warn); }
+    .toast.error .toast-title { color: var(--err); }
+    .toast-body { padding: 6px 14px 12px; font-size: 13.5px; font-weight: 600; color: var(--txt); display: flex; gap: 9px; align-items: center; }
+
+    .xmodal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(4px); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 18px; }
+    .xmodal-overlay.open { display: flex; }
+    .xconsole { width: min(1400px, 96vw); height: min(92vh, 960px); display: flex; flex-direction: column; background: var(--side2); color: var(--txt); border: 1px solid var(--line2); border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px rgba(15,23,42,.35); font-family: inherit; }
+    .nconsole { width: min(1080px, 94vw); height: min(84vh, 780px); }
+
+    .xconsole .topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff; border-bottom: 1px solid var(--line); padding: 10px 16px; }
+    .xconsole .title { font-size: 14px; font-weight: 800; letter-spacing: .8px; color: var(--txt); display: flex; align-items: center; gap: 9px; }
+    .xconsole .tag { font-size: 10px; font-weight: 700; letter-spacing: .8px; background: var(--accSoft); color: var(--acc2); border: 1px solid #a5f3fc; padding: 2px 8px; border-radius: 10px; margin-left: 4px; }
+    .xconsole .topbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .xconsole .state { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: var(--txt2); letter-spacing: .5px; }
+    .xconsole .led { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px rgba(5,150,105,.6); }
+    .xconsole .led.running { background: #f59e0b; box-shadow: 0 0 8px rgba(245,158,11,.6); animation: xpulse 1s infinite; }
+    @keyframes xpulse { 50% { opacity: .35; } }
+
+    .xconsole .terminal { background: #0f172a; border-bottom: 1px solid var(--line2); }
+    .xconsole .term-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 14px; font-size: 10px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: #67e8f9; background: #1e293b; border-bottom: 1px solid #334155; }
+    .xconsole .term-body { padding: 10px 14px; }
+    .xconsole .xprogress-container { display: none; margin-bottom: 8px; }
+    .xconsole .xprogress-bar { height: 8px; border-radius: 4px; overflow: hidden; background: #1e293b; border: 1px solid #334155; }
+    .xconsole .xprogress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #0891b2, #22d3ee); transition: width .25s; }
+    .xconsole .xprogress-text { font-size: 12px; color: #cbd5e1; text-align: center; margin-top: 5px; font-weight: 600; }
+    .xconsole .xstatus { margin-bottom: 8px; padding: 8px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 700; display: none; border: 1px solid; }
+    .xconsole .xstatus.success { color: #047857; background: var(--okSoft); border-color: #a7f3d0; }
+    .xconsole .xstatus.error { color: #b91c1c; background: var(--errSoft); border-color: #fecaca; }
+    .xconsole .xlogbox { max-height: 140px; overflow-y: auto; background: #0b1220; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; font-family: Consolas, "Courier New", monospace; font-size: 12px; color: #94a3b8; }
+    .xconsole .xlogbox::-webkit-scrollbar { width: 6px; }
+    .xconsole .xlogbox::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    .xconsole .xlog-entry { margin-bottom: 2px; white-space: pre-wrap; }
+    .xconsole .xlog-entry.success { color: #6ee7b7; }
+    .xconsole .xlog-entry.error { color: #fca5a5; }
+    .xconsole .prompt { font-family: Consolas, monospace; font-size: 12px; color: #67e8f9; margin-top: 7px; font-weight: 600; }
+    .xconsole .cursor { animation: xblink 1s steps(1) infinite; }
+    @keyframes xblink { 50% { opacity: 0; } }
+
+    .xconsole button { border-radius: 8px; padding: 7px 14px; font-size: 12px; }
+    .xconsole .btn-mini { font-size: 10.5px; padding: 3px 10px; background: rgba(103,232,249,.12); color: #67e8f9; border: 1px solid rgba(103,232,249,.35); }
+    .xconsole .btn-mini:hover { background: rgba(103,232,249,.25); }
+    .xconsole .btn-primary { background: linear-gradient(180deg, #06b6d4, #0891b2); box-shadow: 0 2px 8px rgba(8,145,178,.30); }
+    .xconsole .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #22c3dd, #0aa0c6); }
+    .xconsole .btn-danger { background: var(--errSoft); color: #b91c1c; border: 1px solid #fecaca; }
+    .xconsole .btn-danger:hover { background: #fee2e2; color: #991b1b; }
+    .xconsole .chip { font-size: 11px; font-weight: 700; color: var(--txt2); background: #fff; border: 1px solid var(--line2); padding: 4px 11px; border-radius: 12px; }
+
+    .xconsole .body-panel { flex: 1 1 auto; overflow-y: auto; background: var(--side2); padding: 16px; }
+    .xconsole .body-panel::-webkit-scrollbar { width: 8px; }
+    .xconsole .body-panel::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    .xconsole .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .xconsole .grid .span-4 { grid-column: span 4; }
+    .xconsole .section-title { grid-column: 1 / -1; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--acc2); border-left: 3px solid var(--acc); padding-left: 9px; margin: 8px 0 0 0; }
+    .xconsole .section-title:first-child { margin-top: 0; }
+    .xconsole label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; }
+    .xconsole input, .xconsole select, .xconsole textarea { background: #fff; border: 1px solid var(--line2); border-radius: 8px; color: var(--txt); font-size: 12.5px; padding: 7px 10px; }
+    .xconsole textarea { font-family: Consolas, monospace; height: auto; resize: vertical; }
+    .xconsole input:focus, .xconsole select:focus, .xconsole textarea:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(8,145,178,.16); }
+    .xconsole input::placeholder, .xconsole textarea::placeholder { color: var(--txt3); }
+    .xconsole .frozen { background: #fff; border: 1px dashed var(--line2); border-radius: 8px; padding: 8px 11px; font-family: Consolas, monospace; font-size: 12px; color: var(--txt2); display: flex; align-items: center; gap: 9px; }
+    .xconsole .count-badge { font-size: 10.5px; font-weight: 800; background: var(--acc); color: #fff; padding: 1px 8px; border-radius: 10px; margin-left: 6px; }
+    .xconsole .hint { font-size: 11px; color: var(--txt3); margin-top: 4px; }
+    .xconsole .statusbar { display: flex; justify-content: space-between; align-items: center; background: #fff; border-top: 1px solid var(--line); padding: 7px 16px; font-size: 11px; font-weight: 600; color: var(--txt2); letter-spacing: .4px; gap: 8px; flex-wrap: wrap; }
+    .xconsole .statusbar b { color: var(--acc2); font-weight: 800; }
+
+    .ntabs { display: flex; gap: 6px; padding: 8px 12px; background: var(--card2); border-bottom: 1px solid var(--line); }
+    .ntab { flex: 1; padding: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: .5px; background: #fff; color: var(--txt2); border: 1px solid var(--line2); border-radius: 8px; }
+    .ntab:hover { color: var(--txt); border-color: var(--txt3); }
+    .ntab.active { background: var(--acc); border-color: var(--acc); color: #fff; box-shadow: 0 2px 8px rgba(8,145,178,.35); }
+    .nview { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+    .nadd { display: flex; gap: 8px; padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--line); }
+    .nadd input:first-child { flex: 0 0 150px; }
+    .nadd input:nth-child(2) { flex: 1; }
+    .nadd .btn { flex: 0 0 auto; }
+    .nfilters { display: flex; gap: 6px; align-items: center; padding: 8px 14px; background: var(--card2); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .note-filter-btn { flex: 0 0 auto; width: auto; background: transparent; color: var(--txt2); border: 1px solid var(--line2); border-radius: 14px; font-size: 10.5px; font-weight: 700; letter-spacing: .6px; padding: 4px 13px; }
+    .note-filter-btn:hover { color: var(--txt); border-color: var(--txt3); }
+    .note-filter-btn.active { background: var(--acc); border-color: var(--acc); color: #fff; box-shadow: 0 2px 8px rgba(8,145,178,.35); }
+    .nhint { margin-left: auto; font-size: 10.5px; color: var(--txt3); }
+    .nfilters .btn { padding: 5px 12px; font-size: 11px; }
+    .nhead, .nrow { display: flex; gap: 9px; align-items: center; padding: 7px 14px; }
+    .nhead { background: #eef2f6; border-bottom: 1px solid var(--line); font-size: 10px; font-weight: 800; letter-spacing: 1px; color: var(--txt2); text-transform: uppercase; }
+    .nhead .c1, .nrow .c1 { flex: 0 0 105px; }
+    .nhead .c2, .nrow .c2 { flex: 1; min-width: 0; }
+    .nhead .c3, .nrow .c3 { flex: 0 0 78px; text-align: center; }
+    .nhead .c4, .nrow .c4 { flex: 0 0 96px; text-align: center; }
+    .nhead .a1, .nrow .a1 { flex: 0 0 112px; }
+    .nhead .a2, .nrow .a2 { flex: 0 0 78px; }
+    .nhead .a3, .nrow .a3 { flex: 0 0 92px; }
+    .nhead .a4, .nrow .a4 { flex: 1 1 auto; min-width: 0; }
+    .nhead .a5, .nrow .a5 { flex: 0 0 158px; }
+    .nrow .a1, .nrow .a2 { color: var(--txt2); }
+    .nrow .a3 { color: var(--acc2); font-weight: 800; }
+    .nrow .a4 { color: #047857; font-weight: 700; }
+    .nrow .a5 { color: var(--txt2); font-family: Consolas, monospace; font-size: 11.5px; }
+    .nlist { flex: 1 1 auto; overflow-y: auto; background: var(--card2); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .nlist::-webkit-scrollbar { width: 8px; }
+    .nlist::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    .nrow { border: 1px solid var(--line); border-radius: 9px; background: #fff; font-size: 12.5px; align-items: flex-start; box-shadow: 0 1px 3px rgba(15,23,42,.06); }
+    .nrow .c1 { color: var(--acc2); font-weight: 800; padding-top: 2px; }
+    .nrow .c2 { color: var(--txt); white-space: pre-wrap; padding-top: 2px; }
+    .nrow.done { opacity: .6; background: var(--card2); }
+    .nrow.done .c2 { text-decoration: line-through; color: var(--txt2); }
+    .nstatus { font-size: 9.5px; font-weight: 800; letter-spacing: .6px; padding: 3px 7px; border-radius: 10px; }
+    .nstatus.pending { background: var(--warnSoft); color: var(--warn); border: 1px solid #fde68a; }
+    .nstatus.done { background: var(--okSoft); color: #047857; border: 1px solid #a7f3d0; }
+    .nactions { display: flex; gap: 4px; }
+    .nactions button { flex: 1; font-size: 11px; padding: 4px 0; border-radius: 6px; }
+    .na-done { background: var(--okSoft); color: #047857; border: 1px solid #a7f3d0; }
+    .na-done:hover { background: #d1fae5; }
+    .na-copy { background: var(--accSoft); color: var(--acc2); border: 1px solid #a5f3fc; }
+    .na-copy:hover { background: #cffafe; }
+    .na-del { background: var(--errSoft); color: #b91c1c; border: 1px solid #fecaca; }
+    .na-del:hover { background: #fee2e2; }
+    .nempty { text-align: center; color: var(--txt3); font-size: 12.5px; padding: 34px 0; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--txt3); }
+
+    @media (max-width: 800px) { .xconsole .grid { grid-template-columns: repeat(2, 1fr); } .xconsole .grid .span-4 { grid-column: span 2; } }
+    @media (max-width: 520px) { .xconsole .grid { grid-template-columns: 1fr; } .xconsole .grid .span-4 { grid-column: span 1; } }
+
+    .token-state { font-weight: 800; }
+    .token-state.ok { color: var(--ok); }
+    .token-state.warn { color: var(--warn); }
+    .token-state.err { color: var(--err); }
+    .token-state.muted { color: var(--txt3); }
+
+    #ttModal .xconsole { width: min(1500px, 97vw); height: min(94vh, 980px); }
+    #ttModal .tt-body { flex: 1 1 auto; min-height: 0; background: #fff; border-top: 1px solid var(--line); position: relative; }
+    #ttFrame { width: 100%; height: 100%; border: none; display: block; background: #fff; }
+
+    .tt-diag { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(248,250,252,.97); z-index: 20; padding: 18px; }
+    .tt-diag.show { display: flex; }
+    .tt-diag-card { max-width: 900px; width: 100%; background: #fff; border: 1px solid #cbd5e1; border-left: 4px solid #dc2626; border-radius: 12px; padding: 16px 18px; box-shadow: 0 18px 50px rgba(15,23,42,.18); }
+    .tt-diag-title { font-size: 14px; font-weight: 900; color: #0f172a; margin-bottom: 8px; }
+    .tt-diag-lines { font-family: Consolas, "Courier New", monospace; font-size: 12px; color: #475569; white-space: pre-wrap; word-break: break-word; margin: 10px 0 14px; line-height: 1.5; }
+    .tt-diag-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tt-diag-actions button { border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<div class="main-container">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-title">TICKET WORKBENCH</div>
+            <div class="brand-sub">One-file console</div>
+        </div>
+
+        <div class="sidebar-scroll">
+            <div class="control-box">
+                <h3 class="panel-header" onclick="togglePanel(this)">
+                    <span> Monitor Control</span>
+                    <span class="panel-chevron">▼</span>
+                </h3>
+                <div class="panel-content">
+                    <button class="calculate-btn" onclick="openCRM()">▸ Open CRM</button>
+                    <div style="margin-top: 2px; padding-top: 7px; border-top: 1px solid var(--line);">
+                        <input type="number" id="minutes" placeholder="Auto-refresh (min)">
+                        <div style="display: flex; gap: 6px; margin-top: 6px;">
+                            <button class="start-btn" onclick="startAutoRefresh()">Start</button>
+                            <button class="reset-btn" onclick="stopAutoRefresh()">Stop</button>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        <b>STATUS:</b> <span id="monitorStatus" style="color: #dc2626;">inactive</span><br>
+                        <b>LAST:</b> <span id="lastRefresh">--:--:--</span>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn work-completed-btn" onclick="copyWorkCompleted()">✅ Done</button>
+                        <button class="quick-action-btn ticket-closed-btn" onclick="copyTicketClosed()">🔒 Closed</button>
+                        <button class="quick-action-btn updated-btn" onclick="copyUpdated()">🔄 Updated</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-box">
+                <h3 class="panel-header" onclick="togglePanel(this)">
+                    <span>🔑 Bearer Token</span>
+                    <span class="panel-chevron">▼</span>
+                </h3>
+                <div class="panel-content">
+                    <input type="password" id="sharedToken" placeholder="paste bearer token" autocomplete="off">
+                    <div class="info-box">
+                        <b>STATUS:</b> <span id="sharedTokenState" class="token-state muted">no token</span><br>
+                        <b>EXPIRES:</b> <span id="sharedTokenExp">—</span>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="copy-btn" onclick="copySharedToken()">Copy</button>
+                        <button class="reset-btn" onclick="clearSharedToken()">Clear</button>
+                        <button class="start-btn" onclick="applyTokenToTool()">Apply</button>
+                    </div>
+                    <div class="mini-hint">shared by Export Console and Ticket Tool</div>
+                </div>
+            </div>
+
+            <div class="control-box">
+                <h3 class="panel-header" onclick="togglePanel(this)">
+                    <span>🧮 Calculator</span>
+                    <span class="panel-chevron">▼</span>
+                </h3>
+                <div class="panel-content">
+                    <input type="text" id="ticketNo" placeholder="Ticket Number">
+                    <input type="text" id="datetime" placeholder="May 27, 2026 at 3:29 PM">
+                    <input type="number" id="hours" placeholder="Resolution Hours">
+                    <select id="team">
+                        <option value="">Select Team</option>
+                        <option value="BOH Team">BOH Team</option>
+                        <option value="Carpentry Team">Carpentry Team</option>
+                        <option value="Civil Team">Civil Team</option>
+                        <option value="Contractors Scope">Contractors Scope</option>
+                    </select>
+                    <button class="calculate-btn" onclick="calculateAndCopy()">▸ Calculate & Copy</button>
+                    <div class="mini-hint">auto-logs ticket → team assignment</div>
+                    <button class="reset-btn" onclick="resetFields()">▸ Reset</button>
+                </div>
+            </div>
+
+            <div class="control-box">
+                <h3 class="panel-header" onclick="togglePanel(this)">
+                    <span>🎬 Video → GIF (multi)</span>
+                    <span class="panel-chevron">▼</span>
+                </h3>
+                <div class="panel-content">
+                    <div class="file-input-wrapper" id="dropZone">
+                        <label class="file-label" id="fileLabel">⬇ drag & drop or click to add videos</label>
+                        <input type="file" id="videoFile" accept="video/*" multiple onchange="handleFileSelect(event)">
+                    </div>
+                    <div class="file-queue" id="fileQueue"></div>
+                    <div class="gif-actions">
+                        <button class="convert-btn" id="convertBtn" onclick="startGifQueue()" disabled>▸ Convert All</button>
+                        <button class="reset-btn" id="gifResetBtn" onclick="resetGif()" disabled>✕ Reset</button>
+                    </div>
+                    <button class="cancel-btn" id="cancelBtn" style="display: none;" onclick="cancelConversion()">✕ Cancel Job</button>
+                    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+                </div>
+            </div>
+
+            <button class="flat-btn" onclick="openNotes()">📝 Notes & Assignments <span class="badge" id="noteBadge">0</span></button>
+            <button class="flat-btn" onclick="openExportConsole()">📤 Export Console</button>
+            <button class="flat-btn" onclick="openTicketTool()">🛠 Ticket Tool <span class="badge">v7</span></button>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="foot-row">
+                <span class="foot-left"><span class="led-on"></span> ONLINE</span>
+                <span class="foot-clock" id="sbClock">--:--:--</span>
+            </div>
+            <div class="foot-ver">Ticket Workbench · one-file · shared token</div>
+        </div>
+    </aside>
+
+    <div class="crm-container">
+        <button class="refresh-btn" onclick="refreshCRM()">↻ Refresh CRM</button>
+        <iframe id="crmFrame" title="CRM System"></iframe>
+    </div>
+</div>
+
+<div class="toast" id="toast">
+    <div class="toast-title" id="toastTitle">Ticket Workbench</div>
+    <div class="toast-body"><span id="toastIcon">💬</span><span id="toastMsg"></span></div>
+</div>
+<video id="hiddenVideo" style="display:none;" muted playsinline></video>
+<canvas id="hiddenCanvas" style="display:none;"></canvas>
+<input type="file" id="ttImportFile" accept=".html,.htm,text/html" style="display:none">
+
+<div class="xmodal-overlay" id="nModal">
+    <div class="xconsole nconsole">
+        <div class="topbar">
+            <div class="title">📝 Notes & Assignment Log<span class="tag">LOCAL</span></div>
+            <div class="topbar-actions">
+                <span class="chip" id="nChip">0 pending</span>
+                <span class="chip" id="aChip">0 today</span>
+                <button class="btn btn-danger" onclick="closeNotes()" title="Close (Esc)">✕ CLOSE</button>
+            </div>
+        </div>
+        <div class="ntabs">
+            <button class="ntab active" id="tabNotes" onclick="switchNoteTab('notes')">📝 Follow-Up Notes</button>
+            <button class="ntab" id="tabAssign" onclick="switchNoteTab('assign')">📋 Assignment Log</button>
+        </div>
+        <div class="nview" id="viewNotes">
+            <div class="nadd">
+                <input type="text" id="nTicket" placeholder="TICKET #">
+                <input type="text" id="nText" placeholder="what needs to be done later... (Enter to add)">
+                <button class="btn btn-primary" onclick="addNote()">+ ADD</button>
+                <button class="btn btn-danger" onclick="pullCalcTicket()" title="Pull ticket number from Calculator">⤺</button>
+            </div>
+            <div class="nfilters">
+                <button class="note-filter-btn active" onclick="setNoteFilter('pending', this)">PENDING</button>
+                <button class="note-filter-btn" onclick="setNoteFilter('done', this)">DONE</button>
+                <button class="note-filter-btn" onclick="setNoteFilter('all', this)">ALL</button>
+                <span class="nhint">saved locally in this browser</span>
+                <button class="btn btn-primary" onclick="exportNotes()">▸ EXPORT</button>
+                <button class="btn btn-danger" onclick="resetAllNotes()">✕ RESET ALL</button>
+            </div>
+            <div class="nhead">
+                <div class="c1">Ticket</div>
+                <div class="c2">Note</div>
+                <div class="c3">Status</div>
+                <div class="c4">Actions</div>
+            </div>
+            <div class="nlist" id="notesList"></div>
+        </div>
+        <div class="nview" id="viewAssign" style="display: none;">
+            <div class="nfilters">
+                <button class="note-filter-btn active" id="afToday" onclick="setAssignFilter('today', this)">TODAY</button>
+                <button class="note-filter-btn" id="afAll" onclick="setAssignFilter('all', this)">ALL</button>
+                <span class="nhint">auto-logged on every Calculate & Copy</span>
+                <button class="btn btn-primary" onclick="exportAssignments()">▸ EXPORT LOG</button>
+                <button class="btn btn-danger" onclick="clearAssignments()">✕ CLEAR LOG</button>
+            </div>
+            <div class="nhead">
+                <div class="a1">Date</div>
+                <div class="a2">Time</div>
+                <div class="a3">Ticket</div>
+                <div class="a4">Team</div>
+                <div class="a5">Resolution Due</div>
+            </div>
+            <div class="nlist" id="assignList"></div>
+        </div>
+        <div class="statusbar">
+            <span>NOTES: <b id="nPending">0</b> pending · <b id="nDone">0</b> done</span>
+            <span>ASSIGNMENTS: <b id="aToday">0</b> today · <b id="aTotal">0</b> total · <span id="nClock">--:--:--</span></span>
+        </div>
+    </div>
+</div>
+
+<div class="xmodal-overlay" id="xModal">
+    <div class="xconsole">
+        <div class="topbar">
+            <div class="title">📤 Ticket Export Console<span class="tag">v3.3</span></div>
+            <div class="topbar-actions">
+                <button class="btn btn-primary" id="xDownloadBtn" onclick="xRunExport()">▶ RUN EXPORT</button>
+                <button class="btn btn-danger" onclick="xClearFilters()">✕ CLEAR</button>
+                <span class="chip" id="xRecChip">0 records</span>
+                <div class="state"><span class="led" id="xRunLed"></span><span id="xRunState">IDLE</span></div>
+                <button class="btn btn-danger" onclick="closeExportConsole()" title="Close (Esc)">✕ CLOSE</button>
+            </div>
+        </div>
+        <div class="terminal">
+            <div class="term-head"><span>System Output · Live</span><button class="btn-mini" onclick="xClearLog()">clear</button></div>
+            <div class="term-body">
+                <div class="xprogress-container" id="xProgressContainer">
+                    <div class="xprogress-bar"><div class="xprogress-fill" id="xProgressFill"></div></div>
+                    <div class="xprogress-text" id="xProgressText">initializing…</div>
+                </div>
+                <div class="xstatus" id="xStatus"></div>
+                <div class="xlogbox" id="xLogBox"></div>
+                <div class="prompt">&gt; <span class="cursor">█</span></div>
+            </div>
+        </div>
+        <div class="body-panel">
+            <div class="grid">
+                <div class="section-title" style="display:none">Endpoint · Locked</div>
+                <div class="span-4" style="display:none"><div class="frozen"><span>🔒</span><span id="xEndpointDisplay"></span></div></div>
+                <div class="section-title" style="display:none">Authentication</div>
+                <div class="span-4" style="display:none">
+                    <label for="xBearerToken">Bearer Token</label>
+                    <input type="password" id="xBearerToken" placeholder="uses shared token from sidebar">
+                </div>
+                <div class="section-title">Ticket ID Lookup (multi · Excel paste)</div>
+                <div class="span-4">
+                    <label for="xTicketIds">Ticket Numbers <span class="count-badge" id="xIdCount">0</span></label>
+                    <textarea id="xTicketIds" rows="2" placeholder="Paste from Excel or type: 101576^101575^101574"></textarea>
+                    <div class="hint">Paste directly from an Excel column — separators (^) added automatically. Duplicates removed.</div>
+                </div>
+                <div class="section-title">Date Range & Pagination</div>
+                <div><label for="xFilterType">Filter By</label>
+                    <select id="xFilterType"><option value="created">Created Date</option><option value="closed">Ticket Closed At</option></select>
+                </div>
+                <div><label for="xFromDate">From</label><input type="date" id="xFromDate"></div>
+                <div><label for="xToDate">To</label><input type="date" id="xToDate"></div>
+                <div><label for="xPageSize">Page Size</label><input type="number" id="xPageSize" value="500" min="10" max="1000"></div>
+            </div>
+        </div>
+        <div class="statusbar">
+            <span>STATE: <b id="xFootState">IDLE</b> · <span id="xClock">--:--:--</span></span>
+            <span>FORMAT: <b>XLS</b></span>
+        </div>
+    </div>
+</div>
+
+<div class="xmodal-overlay" id="ttModal">
+    <div class="xconsole">
+        <div class="topbar">
+            <div class="title">🛠 Ticket Tool<span class="tag">v7 embedded</span></div>
+            <div class="topbar-actions">
+                <span class="chip" id="ttTokenHint">token: not loaded</span>
+                <button class="btn btn-danger" onclick="closeTicketTool()" title="Close (Esc)">✕ CLOSE</button>
+            </div>
+        </div>
+        <div class="tt-body">
+            <iframe id="ttFrame" src="about:blank"></iframe>
+        </div>
+    </div>
+</div>
+
+<!--
+====================================================================
+EMBEDDED TICKET TOOL SOURCE
+
+OPTION A - Permanent one-file:
+Open your working ticket-tool.html in Notepad/VS Code, copy ALL contents,
+paste them between <template id="toolSource"> and </template>, replacing
+the placeholder comment below. Save. This file becomes fully standalone.
+
+OPTION B - Quick one-file:
+Open this file, click Ticket Tool, click Import ticket-tool.html once,
+then click Download one-file version. The downloaded file is standalone.
+====================================================================
+-->
+<template id="toolSource">
+<!--
+PASTE YOUR ENTIRE WORKING ticket-tool.html HERE
+
+Replace this comment block with the full contents of ticket-tool.html.
+Keep the outside <template id="toolSource"> and </template> tags.
+-->
+</template>
+
+<script>
+function togglePanel(header) {
+    const box = header.parentElement;
+    box.classList.toggle('collapsed');
+    header.querySelector('.panel-chevron').textContent = box.classList.contains('collapsed') ? '►' : '▼';
+}
+
+let toastTimer = null;
+function showToast(message, type = '') {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = message;
+    document.getElementById('toastIcon').textContent = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '💬';
+    document.getElementById('toastTitle').textContent = type === 'error' ? 'Error' : type === 'warn' ? 'Warning' : 'Ticket Workbench';
+    toast.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+}
+
+function openExportConsole() { document.getElementById('xModal').classList.add('open'); }
+function closeExportConsole() { document.getElementById('xModal').classList.remove('open'); }
+function openNotes() { document.getElementById('nModal').classList.add('open'); }
+function closeNotes() { document.getElementById('nModal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeExportConsole(); closeNotes(); } });
+document.getElementById('xModal').addEventListener('click', e => { if (e.target.id === 'xModal') closeExportConsole(); });
+document.getElementById('nModal').addEventListener('click', e => { if (e.target.id === 'nModal') closeNotes(); });
+
+function switchNoteTab(tab) {
+    const vn = document.getElementById('viewNotes'), va = document.getElementById('viewAssign');
+    const tn = document.getElementById('tabNotes'), ta = document.getElementById('tabAssign');
+    if (tab === 'notes') {
+        vn.style.display = 'flex'; va.style.display = 'none';
+        tn.classList.add('active'); ta.classList.remove('active');
+    } else {
+        vn.style.display = 'none'; va.style.display = 'flex';
+        ta.classList.add('active'); tn.classList.remove('active');
+    }
+}
+
+class MiniGif {
+    constructor(w, h) { this.w = w; this.h = h; this.frames = []; this.delays = []; }
+    addFrame(ctx, delay) {
+        const img = ctx.getImageData(0, 0, this.w, this.h).data;
+        const pixels = new Uint8Array(this.w * this.h);
+        for (let i = 0; i < img.length; i += 4) pixels[i/4] = (img[i] + img[i+1] + img[i+2]) / 3;
+        this.frames.push(pixels);
+        this.delays.push(delay);
+    }
+    save() {
+        const bytes = [];
+        const write = (arr) => bytes.push(...arr);
+        const writeShort = (n) => bytes.push(n & 0xFF, (n >> 8) & 0xFF);
+        write([0x47,0x49,0x46,0x38,0x39,0x61]);
+        writeShort(this.w); writeShort(this.h);
+        write([0xF7, 0x00, 0x00]);
+        for(let i=0; i<256; i++) write([i, i, i]);
+        write([0x21,0xFF,0x0B, 0x4E,0x45,0x54,0x53,0x43,0x41,0x50,0x45,0x32,0x2E,0x30, 0x03,0x01,0x00,0x00,0x00]);
+        for(let f=0; f<this.frames.length; f++) {
+            const delay = Math.round(this.delays[f] / 10);
+            write([0x21,0xF9,0x04, 0x00, delay&0xFF,(delay>>8)&0xFF, 0x00,0x00]);
+            write([0x2C, 0x00,0x00,0x00,0x00]);
+            writeShort(this.w); writeShort(this.h);
+            write([0x00, 0x08]);
+            const pixels = this.frames[f];
+            const clear = 256, eoi = 257;
+            let codeSize = 9, next = 258;
+            const table = new Map();
+            for(let i=0;i<256;i++) table.set(String(i), i);
+            const out = []; let buf = 0, bufBits = 0;
+            const writeCode = (c) => { buf |= (c << bufBits); bufBits += codeSize; while(bufBits>=8){out.push(buf&0xFF); buf>>=8; bufBits-=8;} };
+            writeCode(clear);
+            let w = String(pixels[0]);
+            for(let i=1; i<pixels.length; i++) {
+                const k = String(pixels[i]), wk = w+','+k;
+                if(table.has(wk)) w = wk;
+                else {
+                    writeCode(table.get(w));
+                    if(next < 4096) { table.set(wk, next++); if(next > (1<<codeSize) && codeSize<12) codeSize++; }
+                    w = k;
+                }
+            }
+            writeCode(table.get(w)); writeCode(eoi);
+            if(bufBits > 0) out.push(buf & 0xFF);
+            for(let i=0; i<out.length; i+=255) { const b=out.slice(i,Math.min(i+255,out.length)); write([b.length, ...b]); }
+            write([0x00]);
+        }
+        write([0x3B]);
+        return new Blob([new Uint8Array(bytes)], {type: 'image/gif'});
+    }
+}
+
+let gifQueue = [];
+let queueRunning = false;
+let isCancelled = false;
+
+function renderQueue() {
+    const list = document.getElementById('fileQueue');
+    if (gifQueue.length === 0) { list.classList.remove('has-files'); list.innerHTML = ''; return; }
+    list.classList.add('has-files');
+    list.innerHTML = gifQueue.map((q, i) => {
+        const statusText = q.status === 'done' ? '✓' : q.status === 'active' ? '●' : q.status === 'error' ? '✕' : (i + 1);
+        return `<div class="fqi"><span class="n">${i+1}. ${q.file.name}</span><span class="s ${q.status}">${statusText}</span></div>`;
+    }).join('');
+}
+function updateGifButtons() {
+    const hasFiles = gifQueue.length > 0;
+    document.getElementById('convertBtn').disabled = !hasFiles || queueRunning;
+    document.getElementById('gifResetBtn').disabled = !hasFiles && !queueRunning;
+    if (hasFiles) document.getElementById('fileLabel').textContent = `${gifQueue.length} video${gifQueue.length>1?'s':''} queued — click or drop more`;
+    else if (!queueRunning) document.getElementById('fileLabel').textContent = '⬇ drag & drop or click to add videos';
+}
+function addToQueue(fileList) {
+    const addedCount = Array.from(fileList).filter(f => f.type.startsWith('video/')).length;
+    if (addedCount === 0) { showToast('No video files detected', 'error'); return; }
+    for (let f of fileList) if (f.type.startsWith('video/')) gifQueue.push({ file: f, status: 'pending' });
+    renderQueue(); updateGifButtons();
+    showToast(`Added ${addedCount} video${addedCount>1?'s':''} to queue`);
+}
+function handleFileSelect(e) { addToQueue(e.target.files); e.target.value = ''; }
+const dropZone = document.getElementById('dropZone');
+['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); document.getElementById('fileLabel').classList.add('dragover'); }));
+['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); document.getElementById('fileLabel').classList.remove('dragover'); }));
+dropZone.addEventListener('drop', e => { const dt = e.dataTransfer; if (dt && dt.files) addToQueue(dt.files); });
+function cancelConversion() { isCancelled = true; showToast('Cancellation requested', 'warn'); }
+function resetGif() {
+    if (queueRunning) { isCancelled = true; showToast('cancelling current job...', 'warn'); return; }
+    gifQueue = [];
+    document.getElementById('videoFile').value = '';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('progressBar').style.display = 'none';
+    document.getElementById('progressFill').style.width = '0%';
+    const video = document.getElementById('hiddenVideo'); video.pause(); video.removeAttribute('src'); video.load();
+    renderQueue(); updateGifButtons(); showToast('✓ GIF panel reset');
+}
+async function startGifQueue() {
+    if (queueRunning || gifQueue.length === 0) return;
+    queueRunning = true; isCancelled = false;
+    document.getElementById('convertBtn').disabled = true;
+    document.getElementById('cancelBtn').style.display = 'block';
+    document.getElementById('progressBar').style.display = 'block';
+    showToast(`Starting queue: ${gifQueue.length} video${gifQueue.length>1?'s':''} to process`);
+    for (let i = 0; i < gifQueue.length; i++) {
+        if (isCancelled) break;
+        if (gifQueue[i].status === 'done') continue;
+        gifQueue[i].status = 'active'; renderQueue();
+        const ok = await convertOneGif(gifQueue[i].file, i + 1, gifQueue.length);
+        gifQueue[i].status = ok ? 'done' : 'error'; renderQueue();
+    }
+    queueRunning = false; isCancelled = false;
+    document.getElementById('cancelBtn').style.display = 'none'; updateGifButtons();
+    const doneCount = gifQueue.filter(q => q.status === 'done').length;
+    const errorCount = gifQueue.filter(q => q.status === 'error').length;
+    if (isCancelled) showToast('Queue cancelled', 'warn');
+    else showToast(`✓ ${doneCount} done${errorCount ? ` · ${errorCount} failed` : ''}`, errorCount ? 'warn' : '');
+}
+async function convertOneGif(currentFile, fileIndex, totalFiles) {
+    const bar = document.getElementById('progressBar'), fill = document.getElementById('progressFill');
+    fill.style.width = '0%';
+    showToast(`[${fileIndex}/${totalFiles}] Loading ${currentFile.name}`);
+    const video = document.getElementById('hiddenVideo'), canvas = document.getElementById('hiddenCanvas'), ctx = canvas.getContext('2d');
+    try {
+        video.src = URL.createObjectURL(currentFile);
+        await new Promise((r, j) => { video.onloadedmetadata = r; video.onerror = j; });
+        if (isCancelled) throw new Error("cancelled by user");
+        let scale = 1, targetFps = 10, blob = null;
+        const MAX_SIZE = 20 * 1024 * 1024;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            if (isCancelled) throw new Error("cancelled by user");
+            if (attempt === 1) { scale = 0.5; targetFps = 5; showToast(`[${fileIndex}/${totalFiles}] Compressing 50%: ${currentFile.name}`, 'warn'); }
+            else if (attempt === 2) { scale = 0.25; targetFps = 3; showToast(`[${fileIndex}/${totalFiles}] Heavy compression · 25% · 3fps`, 'warn'); }
+            else showToast(`[${fileIndex}/${totalFiles}] Recording: ${currentFile.name}`);
+            canvas.width = Math.floor(video.videoWidth * scale); canvas.height = Math.floor(video.videoHeight * scale);
+            const gif = new MiniGif(canvas.width, canvas.height);
+            const duration = video.duration, fps = targetFps, totalFrames = Math.floor(duration * fps), frameDelay = 1000 / fps;
+            video.currentTime = 0; await video.play();
+            let lastToastPercent = 0;
+            for(let i=0; i<totalFrames; i++) {
+                if (isCancelled) { video.pause(); throw new Error("cancelled by user"); }
+                await new Promise(r => setTimeout(r, frameDelay));
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                gif.addFrame(ctx, frameDelay);
+                const pct = Math.round(((i+1)/totalFrames)*100);
+                fill.style.width = pct + '%';
+                if (pct >= lastToastPercent + 25) { showToast(`[${fileIndex}/${totalFiles}] ${currentFile.name} · ${pct}%`); lastToastPercent = pct; }
+                if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+            }
+            video.pause();
+            if (isCancelled) throw new Error("cancelled by user");
+            showToast(`[${fileIndex}/${totalFiles}] Encoding ${currentFile.name}`);
+            blob = gif.save();
+            if (blob.size <= MAX_SIZE) break;
+            else showToast(`[${fileIndex}/${totalFiles}] ${(blob.size/(1024*1024)).toFixed(2)}MB · retrying...`, 'warn');
+        }
+        if (isCancelled) throw new Error("cancelled by user");
+        const url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = currentFile.name.replace(/\.[^.]+$/, '') + '.gif';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        showToast(`✓ [${fileIndex}/${totalFiles}] ${(blob.size/(1024*1024)).toFixed(2)}MB · ${currentFile.name}`);
+        video.removeAttribute('src'); video.load();
+        return true;
+    } catch(err) {
+        if (err.message.includes("cancelled")) showToast(`✕ [${fileIndex}/${totalFiles}] cancelled`, 'warn');
+        else { console.error(err); showToast(`✕ [${fileIndex}/${totalFiles}] ${err.message}`, 'error'); }
+        video.removeAttribute('src'); video.load();
+        return false;
+    }
+}
+
+let wsNotes = [];
+let noteFilter = 'pending';
+try { wsNotes = JSON.parse(localStorage.getItem('ws_notes') || '[]'); } catch(e) { wsNotes = []; }
+function saveNotes() { localStorage.setItem('ws_notes', JSON.stringify(wsNotes)); }
+function pullCalcTicket() {
+    const t = document.getElementById('ticketNo').value.trim();
+    if (!t) return showToast('⚠ calculator ticket empty', 'warn');
+    document.getElementById('nTicket').value = t;
+    document.getElementById('nText').focus();
+    showToast('✓ ticket pulled from calculator');
+}
+function addNote() {
+    const ticket = document.getElementById('nTicket').value.trim();
+    const text = document.getElementById('nText').value.trim();
+    if (!ticket || !text) return showToast('⚠ ticket + note required', 'warn');
+    wsNotes.unshift({ id: Date.now(), ticket: ticket, text: text, done: false, created: new Date().toISOString() });
+    saveNotes();
+    document.getElementById('nTicket').value = '';
+    document.getElementById('nText').value = '';
+    document.getElementById('nTicket').focus();
+    renderNotes(); showToast('✓ note saved');
+}
+['nTicket', 'nText'].forEach(id => document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') addNote(); }));
+function setNoteFilter(f, btn) { noteFilter = f; btn.parentElement.querySelectorAll('.note-filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderNotes(); }
+function toggleNoteDone(id) { const n = wsNotes.find(n => n.id === id); if (n) { n.done = !n.done; saveNotes(); renderNotes(); showToast(n.done ? '✓ marked completed' : '↺ reopened'); } }
+function deleteNote(id) { wsNotes = wsNotes.filter(n => n.id !== id); saveNotes(); renderNotes(); showToast('✓ note deleted'); }
+function copyNote(id) { const n = wsNotes.find(n => n.id === id); if (!n) return; navigator.clipboard.writeText(`Ticket: ${n.ticket}\nNote: ${n.text}`).then(() => showToast('✓ note copied')); }
+function resetAllNotes() {
+    if (!wsNotes.length) return showToast('⚠ no notes to reset', 'warn');
+    if (!confirm(`Delete ALL ${wsNotes.length} notes? This cannot be undone.`)) return;
+    wsNotes = []; saveNotes(); renderNotes(); showToast('✓ all notes cleared');
+}
+function renderNotes() {
+    const pending = wsNotes.filter(n => !n.done).length;
+    const done = wsNotes.length - pending;
+    document.getElementById('noteBadge').textContent = pending;
+    document.getElementById('nChip').textContent = `${pending} pending`;
+    document.getElementById('nPending').textContent = pending;
+    document.getElementById('nDone').textContent = done;
+    let items = wsNotes.slice();
+    if (noteFilter === 'pending') items = items.filter(n => !n.done);
+    if (noteFilter === 'done') items = items.filter(n => n.done);
+    items.sort((a, b) => (a.done === b.done ? b.created.localeCompare(a.created) : (a.done ? 1 : -1)));
+    const list = document.getElementById('notesList');
+    if (!items.length) { list.innerHTML = `<div class="nempty">— no notes —</div>`; return; }
+    list.innerHTML = items.map(n => `
+        <div class="nrow ${n.done ? 'done' : ''}">
+            <div class="c1">#${xEscapeHtml(n.ticket)}</div>
+            <div class="c2">${xEscapeHtml(n.text)}</div>
+            <div class="c3"><span class="nstatus ${n.done ? 'done' : 'pending'}">${n.done ? 'DONE' : 'PENDING'}</span></div>
+            <div class="c4"><div class="nactions">
+                <button class="na-done" title="${n.done ? 'Reopen' : 'Mark completed'}" onclick="toggleNoteDone(${n.id})">${n.done ? '↺' : '✓'}</button>
+                <button class="na-copy" title="Copy" onclick="copyNote(${n.id})">📋</button>
+                <button class="na-del" title="Delete" onclick="deleteNote(${n.id})">✕</button>
+            </div></div>
+        </div>`).join('');
+}
+function exportNotes() {
+    if (!wsNotes.length) return showToast('⚠ no notes to export', 'warn');
+    const headers = ['Ticket', 'Note', 'Status', 'Created'];
+    let html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><style>td{white-space:nowrap;mso-number-format:"\\@";font-family:Calibri,Arial,sans-serif;font-size:11pt;}.title{font-size:14pt;font-weight:bold;}</style></head><body><table>`;
+    html += `<tr><td class="title">FOLLOW-UP NOTES</td></tr>`;
+    html += `<tr><td><b>Generated</b></td><td><i>${xFormatDateTime(new Date())}</i></td></tr>`;
+    html += `<tr><td><b>Pending</b></td><td><i>${wsNotes.filter(n => !n.done).length}</i></td></tr>`;
+    html += `<tr><td></td></tr>`;
+    html += `<tr>` + headers.map(h => `<td><b><i>${h}</i></b></td>`).join('') + `</tr>`;
+    wsNotes.forEach(n => { html += `<tr><td>${xEscapeHtml(n.ticket)}</td><td>${xEscapeHtml(n.text)}</td><td>${n.done ? 'Done' : 'Pending'}</td><td>${xFormatDateTime(n.created)}</td></tr>`; });
+    html += `</table></body></html>`;
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `FollowUp_Notes_${new Date().toISOString().slice(0, 10)}.xls`; a.style.visibility = 'hidden';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    showToast('✓ notes exported');
+}
+
+let wsAssign = [];
+let assignFilter = 'today';
+try { wsAssign = JSON.parse(localStorage.getItem('ws_assign') || '[]'); } catch(e) { wsAssign = []; }
+function saveAssign() { localStorage.setItem('ws_assign', JSON.stringify(wsAssign)); }
+function todayKey() { return new Date().toLocaleDateString('en-CA'); }
+function logAssignment(ticket, team, resolution) {
+    const now = new Date();
+    wsAssign.unshift({ id: Date.now(), ticket, team, resolution, date: now.toLocaleString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }), time: now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }), dayKey: todayKey(), created: now.toISOString() });
+    saveAssign(); renderAssign();
+}
+function setAssignFilter(f, btn) { assignFilter = f; document.getElementById('afToday').classList.remove('active'); document.getElementById('afAll').classList.remove('active'); btn.classList.add('active'); renderAssign(); }
+function clearAssignments() {
+    if (!wsAssign.length) return showToast('⚠ assignment log already empty', 'warn');
+    if (!confirm(`Delete ALL ${wsAssign.length} assignment entries? This cannot be undone.`)) return;
+    wsAssign = []; saveAssign(); renderAssign(); showToast('✓ assignment log cleared');
+}
+function renderAssign() {
+    const tk = todayKey();
+    const todayCount = wsAssign.filter(a => a.dayKey === tk).length;
+    document.getElementById('aChip').textContent = `${todayCount} today`;
+    document.getElementById('aToday').textContent = todayCount;
+    document.getElementById('aTotal').textContent = wsAssign.length;
+    let items = wsAssign.slice();
+    if (assignFilter === 'today') items = items.filter(a => a.dayKey === tk);
+    items.sort((a, b) => b.id - a.id);
+    const list = document.getElementById('assignList');
+    if (!items.length) { list.innerHTML = `<div class="nempty">— no assignment entries${assignFilter === 'today' ? ' today' : ''} —</div>`; return; }
+    list.innerHTML = items.map(a => `
+        <div class="nrow">
+            <div class="a1">${xEscapeHtml(a.date)}</div>
+            <div class="a2">${xEscapeHtml(a.time)}</div>
+            <div class="a3">#${xEscapeHtml(a.ticket)}</div>
+            <div class="a4">${xEscapeHtml(a.team)}</div>
+            <div class="a5">${xEscapeHtml(a.resolution)}</div>
+        </div>`).join('');
+}
+function exportAssignments() {
+    const tk = todayKey();
+    let items = wsAssign.slice();
+    const isToday = assignFilter === 'today';
+    if (isToday) items = items.filter(a => a.dayKey === tk);
+    if (!items.length) return showToast('⚠ nothing to export in this view', 'warn');
+    items.sort((a, b) => a.id - b.id);
+    const scopeLabel = isToday ? `Today (${xFormatDateOnly(tk)})` : 'All time';
+    let html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><head><meta charset="UTF-8">`;
+    html += `<style>
+        td { white-space: nowrap; font-family: Calibri, Arial, sans-serif; font-size: 11pt; padding: 4px 8px; border: 1px solid #d1d5db; vertical-align: middle; }
+        .title { font-size: 16pt; font-weight: bold; color: #111827; border: none; padding: 0 0 8px 0; border-bottom: 3px solid #111827; }
+        .label { font-weight: bold; color: #374151; background: #f3f4f6; width: 140px; mso-number-format:"\\@"; }
+        .value { color: #111827; background: #ffffff; mso-number-format:"\\@"; }
+        .hdr { background: #1f2937; color: #ffffff; font-weight: bold; text-align: left; padding: 8px 10px; border: 1px solid #111827; white-space: nowrap; font-size: 11pt; }
+        .hdr.h-id { background: #1e40af; } .hdr.h-team { background: #065f46; } .hdr.h-when { background: #b45309; }
+        td.c-id { background: #eff6ff; color: #1e3a8a; font-weight: 700; mso-number-format:"0"; }
+        td.c-team { background: #ecfdf5; color: #065f46; font-weight: 600; mso-number-format:"\\@"; }
+        td.c-when { background: #fffbeb; color: #92400e; mso-number-format:"\\@"; }
+    </style></head><body><table>`;
+    html += `<tr><td class="title">TICKET ASSIGNMENT LOG</td></tr>`;
+    html += `<tr><td class="label">Generated</td><td class="value">${xFormatDateTime(new Date())}</td></tr>`;
+    html += `<tr><td class="label">Scope</td><td class="value">${scopeLabel}</td></tr>`;
+    html += `<tr><td class="label">Total Entries</td><td class="value">${items.length}</td></tr>`;
+    html += `<tr><td style="border:none; height:10px; background:transparent;"></td></tr>`;
+    html += `<tr><td class="hdr h-when">Date</td><td class="hdr h-when">Time</td><td class="hdr h-id">Ticket ID</td><td class="hdr h-team">Team</td><td class="hdr h-when">Resolution Due</td></tr>`;
+    items.forEach(a => { html += `<tr><td class="c-when">${xEscapeHtml(a.date)}</td><td class="c-when">${xEscapeHtml(a.time)}</td><td class="c-id">${xEscapeHtml(a.ticket)}</td><td class="c-team">${xEscapeHtml(a.team)}</td><td class="c-when">${xEscapeHtml(a.resolution)}</td></tr>`; });
+    html += `</table></body></html>`;
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = `Assignment_Log_${isToday ? tk : 'All'}_${new Date().toISOString().slice(0,10)}.xls`; link.style.visibility = 'hidden';
+    document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+    showToast(`✓ assignment log exported (${items.length} entries)`);
+}
+
+function parseCustomDate(str) { const d = new Date(str.replace(" at ", " ")); return isNaN(d) ? null : d; }
+function formatDate(d) { return `${d.toLocaleString("en-US",{year:"numeric",month:"long",day:"2-digit"})} at ${d.toLocaleString("en-US",{hour:"2-digit",minute:"2-digit"})}`; }
+function formatTeam(t) { return {"BOH Team":"BOH @ranj","Civil Team":"Civil @kan","Carpentry Team":"Carpentry @kram","Contractors Scope":"Contractors Scope @T1 @nau @paul @riyaz"}[t] || t; }
+function calculateAndCopy() {
+    const t=document.getElementById("ticketNo").value.trim(), dt=document.getElementById("datetime").value, h=parseFloat(document.getElementById("hours").value), tm=document.getElementById("team").value;
+    if(!t||!dt||!h||!tm) return showToast("⚠ fill all fields", 'warn');
+    const s=parseCustomDate(dt); if(!s) return showToast("⚠ invalid date", 'error');
+    const r=new Date(s.getTime()+h*3600000);
+    const resStr = formatDate(r);
+    const msg=`Ticket: ${t}\nResolution Time: ${resStr}\nTeam: ${formatTeam(tm)}`;
+    logAssignment(t, tm, resStr);
+    navigator.clipboard.writeText(msg).then(() => showToast('✓ calculated, copied & logged'));
+}
+function resetFields() { ["ticketNo","datetime","hours"].forEach(i=>document.getElementById(i).value=""); document.getElementById("team").value=""; showToast('✓ calculator reset'); }
+function copyWorkCompleted() { navigator.clipboard.writeText("✅ Work Completed").then(()=>showToast("✓ Work Completed copied")); }
+function copyTicketClosed() { navigator.clipboard.writeText("🔒 Ticket Closed").then(()=>showToast("✓ Ticket Closed copied")); }
+function copyUpdated() { navigator.clipboard.writeText("🔄 Updated").then(()=>showToast("✓ Updated copied")); }
+
+let rT,cT,tS=0;
+function openCRM() { document.getElementById("crmFrame").src = 'https://ashre.alshareef.com.qa/support-tickets'; document.getElementById("lastRefresh").innerText = new Date().toLocaleTimeString(); }
+function refreshCRM() { const f=document.getElementById("crmFrame"); if(f.src&&f.src!=="about:blank"){f.src=f.src;document.getElementById("lastRefresh").innerText=new Date().toLocaleTimeString();} else showToast("⚠ open CRM first", 'warn'); }
+function startAutoRefresh() { stopAutoRefresh(); const m=parseInt(document.getElementById("minutes").value)||10; tS=m*60; document.getElementById("monitorStatus").innerText="active"; document.getElementById("monitorStatus").style.color="#059669"; cT=setInterval(()=>{tS--;if(tS<0)tS=m*60;const mm=Math.floor(tS/60),ss=tS%60;document.getElementById("monitorStatus").innerText=`active (${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')})`;},1000); rT=setInterval(()=>{const f=document.getElementById("crmFrame");if(f.src&&f.src!=="about:blank")f.src=f.src;document.getElementById("lastRefresh").innerText=new Date().toLocaleTimeString();tS=m*60;},m*60000); }
+function stopAutoRefresh() { clearInterval(rT);clearInterval(cT);document.getElementById("monitorStatus").innerText="inactive";document.getElementById("monitorStatus").style.color="#dc2626"; }
+
+const X_API_URL = 'https://ashre-backend.alshareef.com.qa/api/v1/SupportTickets/SupportTicketList';
+const X_TICKET_ID_PARAM = 'ticketId';
+const X_ORDERED_COLUMNS = {
+    'Ticket ID':            { key: 'ticketId',            cls: 'c-id' },
+    'Category Title':       { key: 'categoryTitle',       cls: 'c-cat' },
+    'Sub Category Title':   { key: 'subCategoryTitle',    cls: 'c-cat' },
+    'Building Code':        { key: 'buildingCode',        cls: 'c-loc' },
+    'Unit Code':            { key: 'unitCode',            cls: 'c-loc' },
+    'Priority Name':        { key: 'priorityName',        cls: 'c-pri' },
+    'Description':          { key: 'description',         cls: 'c-desc' },
+    'Description From App': { key: 'descriptionFromApp',  cls: 'c-desc' },
+    'Status Title':         { key: 'statusTitle',         cls: 'c-status' },
+    'Created Date':         { key: 'createdDate',         cls: 'c-date' },
+    'Max Resolution Time':  { key: 'maxResolutionTime',   cls: 'c-date' },
+    'Ticket Closed At':     { key: 'ticketClosedAt',      cls: 'c-date' },
+    'Tenant Name':          { key: 'tenantName',          cls: 'c-tenant' },
+    'Is Escalated':         { key: 'isEscalated',         cls: 'c-esc' },
+    'Subject':              { key: 'subject',             cls: 'plain' },
+    'Owner Name':           { key: 'ownerName',           cls: 'plain' },
+    'Contact Mobile No':    { key: 'contactMobileNo',     cls: 'plain' },
+    'Contact Email':        { key: 'contactEmail',        cls: 'plain' },
+    'Created User':         { key: 'createdUser',         cls: 'plain' },
+    'Created User Email':   { key: 'createdUserEmail',    cls: 'plain' },
+    'Created User Mobile':  { key: 'createdUserMobile',   cls: 'plain' },
+    'Status Type Name':     { key: 'statusTypeName',      cls: 'plain' },
+    'Ticket Source':        { key: 'ticketSource',        cls: 'plain' },
+    'Building Name':        { key: 'buildingName',        cls: 'plain' },
+    'Unit ID':              { key: 'unitId',              cls: 'plain' },
+    'Department Title':     { key: 'departmentTitle',     cls: 'plain' },
+    'Ticket Channel Title': { key: 'ticketChannelTitle',  cls: 'plain' }
+};
+const X_DATE_KEYS = new Set(['createdDate', 'maxResolutionTime', 'ticketClosedAt']);
+
+/* ============================================================
+   TIMEZONE FIX — Qatar (UTC+3)
+   API dates without Z/offset are treated as UTC.
+   Display and filters use Asia/Qatar.
+   ============================================================ */
+const QATAR_TZ = "Asia/Qatar";
+const QATAR_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+function xParseApiDate(value) {
+    if (value == null || value === "") return null;
+    if (value instanceof Date) return isNaN(value) ? null : value;
+    if (typeof value === "number") {
+        const d = new Date(value);
+        return isNaN(d) ? null : d;
+    }
+
+    let s = String(value).trim();
+    if (!s) return null;
+
+    // Already has explicit timezone info: keep as-is
+    if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s)) {
+        const d = new Date(s);
+        return isNaN(d) ? null : d;
+    }
+
+    // Naive ISO-like datetime from API: treat as UTC
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(s)) {
+        s = s.replace(" ", "T") + "Z";
+    }
+
+    const d = new Date(s);
+    return isNaN(d) ? null : d;
+}
+
+function xFormatDateTime(value) {
+    const d = xParseApiDate(value);
+    if (!d) return value == null ? "" : String(value);
+
+    const datePart = d.toLocaleString("en-US", {
+        timeZone: QATAR_TZ,
+        month: "long",
+        day: "2-digit",
+        year: "numeric"
+    });
+
+    const timePart = d.toLocaleString("en-US", {
+        timeZone: QATAR_TZ,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+    });
+
+    return `${datePart} at ${timePart}`;
+}
+
+function xFormatDateOnly(dateStr) {
+    if (!dateStr) return "";
+
+    const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) {
+        const d = xParseApiDate(dateStr);
+        return d ? d.toLocaleString("en-US", {
+            timeZone: QATAR_TZ,
+            month: "long",
+            day: "2-digit",
+            year: "numeric"
+        }) : String(dateStr);
+    }
+
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+
+    // Use noon UTC to avoid any edge-case day shifting when formatting a pure date
+    const dt = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0, 0));
+    return dt.toLocaleString("en-US", {
+        timeZone: QATAR_TZ,
+        month: "long",
+        day: "2-digit",
+        year: "numeric"
+    });
+}
+
+function xQatarDateToUtcIso(dateString, endOfDay = false) {
+    if (!dateString) return null;
+
+    const m = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+
+    // Qatar midnight = UTC previous day 21:00
+    const utcStartMs = Date.UTC(y, mo - 1, d, 0, 0, 0, 0) - QATAR_UTC_OFFSET_MS;
+    const ms = endOfDay ? utcStartMs + 86400000 - 1 : utcStartMs;
+
+    return new Date(ms).toISOString();
+}
+
+let xAllTickets = [], xIsDownloading = false;
+const xSleep = ms => new Promise(r => setTimeout(r, ms));
+document.getElementById('xEndpointDisplay').textContent = X_API_URL;
+setInterval(() => {
+    const t = new Date().toLocaleTimeString('en-GB');
+    document.getElementById('xClock').textContent = t;
+    document.getElementById('nClock').textContent = t;
+    const sb = document.getElementById('sbClock'); if (sb) sb.textContent = t;
+}, 1000);
+function xSetRunning(on) { document.getElementById('xRunLed').className = 'led' + (on ? ' running' : ''); document.getElementById('xRunState').textContent = on ? 'RUNNING' : 'IDLE'; document.getElementById('xFootState').textContent = on ? 'RUNNING' : 'IDLE'; }
+function xClearLog() { document.getElementById('xLogBox').innerHTML = ''; }
+function xNormalizeIds(raw) { const parts = String(raw).split(/[\^,;\s]+/).map(s => s.trim()).filter(s => s !== ''); return [...new Set(parts)]; }
+function xParseTicketIds() { return xNormalizeIds(document.getElementById('xTicketIds').value); }
+function xUpdateIdCount() { document.getElementById('xIdCount').textContent = xParseTicketIds().length; }
+document.getElementById('xTicketIds').addEventListener('paste', (e) => { e.preventDefault(); const raw = (e.clipboardData || window.clipboardData).getData('text'); const ids = xNormalizeIds(raw); document.getElementById('xTicketIds').value = ids.join('^'); xUpdateIdCount(); xLog(`pasted ${ids.length} ID(s) — auto-separated with ^`, 'success'); });
+document.getElementById('xTicketIds').addEventListener('input', xUpdateIdCount);
+function xClearFilters() { document.getElementById('xTicketIds').value = ''; document.getElementById('xFromDate').value = ''; document.getElementById('xToDate').value = ''; document.getElementById('xFilterType').selectedIndex = 0; document.getElementById('xPageSize').value = 500; xUpdateIdCount(); xLog('filters cleared.', 'success'); }
+function xLog(message, type = '') { const box = document.getElementById('xLogBox'); const entry = document.createElement('div'); entry.className = `xlog-entry ${type}`; entry.textContent = `[${new Date().toLocaleTimeString('en-GB')}] ${message}`; box.appendChild(entry); box.scrollTop = box.scrollHeight; }
+function xUpdateProgress(current, total, message) { document.getElementById('xProgressContainer').style.display = 'block'; if (total > 0) document.getElementById('xProgressFill').style.width = `${(current / total) * 100}%`; document.getElementById('xProgressText').textContent = message; }
+function xShowStatus(message, type) { const status = document.getElementById('xStatus'); status.className = `xstatus ${type}`; status.textContent = (type === 'success' ? '✓ ' : '✕ ') + message; status.style.display = 'block'; }
+function xExtractCleanData(ticket) { const cleanRow = {}; for (const [columnName, col] of Object.entries(X_ORDERED_COLUMNS)) { let value = ticket[col.key]; if (value === null || value === undefined) value = ''; else if (typeof value === 'object') value = JSON.stringify(value); else if (X_DATE_KEYS.has(col.key) && typeof value === 'string') value = xFormatDateTime(value); cleanRow[columnName] = value; } return cleanRow; }
+function xEscapeHtml(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+async function xFetchTicketsPage(url, bearerToken) {
+    const response = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${bearerToken}`, 'Accept': 'application/json', 'Content-Type': 'application/json' } });
+    if (response.status === 401) throw new Error('Unauthorized (401). Token expired.');
+    if (!response.ok) { const errorText = await response.text(); throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`); }
+    const data = await response.json();
+    let tickets = [], totalCount = 0;
+    if (Array.isArray(data)) tickets = data;
+    else if (typeof data === 'object') {
+        if (data.result && data.result.items) { tickets = data.result.items; totalCount = data.result.totalCount || 0; }
+        else if (data.data) tickets = Array.isArray(data.data) ? data.data : [];
+        else if (data.records) tickets = data.records;
+        else { for (let key of Object.keys(data)) { if (Array.isArray(data[key])) { tickets = data[key]; break; } } }
+    }
+    return { tickets, totalCount };
+}
+function xBuildFilterSummary(ticketIds, filterType, fromDateInput, toDateInput) {
+    const rows = [];
+    rows.push(['Generated', xFormatDateTime(new Date())]);
+    if (ticketIds.length > 0) { rows.push(['Search Mode', 'Ticket ID Search']); rows.push(['Ticket IDs', ticketIds.join(', ')]); rows.push(['Total IDs Requested', String(ticketIds.length)]); }
+    else { rows.push(['Date Filter', filterType === 'created' ? 'Created Date' : 'Ticket Closed At']); rows.push(['From', fromDateInput ? xFormatDateOnly(fromDateInput) : 'All']); rows.push(['To', toDateInput ? xFormatDateOnly(toDateInput) : 'Today']); }
+    return rows;
+}
+async function xRunExport() {
+    if (xIsDownloading) return;
+    const bearerToken = document.getElementById('xBearerToken').value.trim();
+    const pageSize = parseInt(document.getElementById('xPageSize').value);
+    const fromDateInput = document.getElementById('xFromDate').value;
+    const toDateInput = document.getElementById('xToDate').value;
+    const filterType = document.getElementById('xFilterType').value;
+    const ticketIds = xParseTicketIds();
+    if (!bearerToken) { xShowStatus('Bearer Token is required (paste in sidebar Bearer Token panel).', 'error'); return; }
+    const apiUrl = X_API_URL.split('?')[0];
+
+    // Qatar date picker values are converted to UTC boundaries for the API
+    const fromDate = xQatarDateToUtcIso(fromDateInput, false);
+    const toDate = xQatarDateToUtcIso(toDateInput, true);
+
+    xIsDownloading = true; xSetRunning(true); xAllTickets = [];
+    document.getElementById('xDownloadBtn').disabled = true;
+    document.getElementById('xStatus').style.display = 'none';
+    document.getElementById('xRecChip').textContent = '0 records';
+    xLog('export job started.');
+    let fileTag = `${filterType}_${fromDateInput || 'All'}_to_${toDateInput || 'Today'}`;
+    try {
+        if (ticketIds.length > 0) {
+            fileTag = `IDs_${ticketIds.length}_${new Date().toISOString().slice(0,10)}`;
+            xLog(`mode: ID lookup · ${ticketIds.length} ticket(s): ${ticketIds.join(', ')}`, 'success');
+            const seen = new Set();
+            for (let i = 0; i < ticketIds.length; i++) {
+                const id = ticketIds[i];
+                xUpdateProgress(i, ticketIds.length, `fetching ${i+1}/${ticketIds.length} · ticket ${id}`);
+                let page = 1, hasMore = true, found = 0;
+                while (hasMore) {
+                    const url = `${apiUrl}?pageNumber=${page}&pageSize=${pageSize}&${X_TICKET_ID_PARAM}=${encodeURIComponent(id)}`;
+                    const { tickets } = await xFetchTicketsPage(url, bearerToken);
+                    if (tickets.length === 0) hasMore = false;
+                    else {
+                        tickets.forEach(t => { const key = (t.ticketId !== undefined && t.ticketId !== null) ? String(t.ticketId) : `${id}-p${page}-${found}`; if (!seen.has(key)) { seen.add(key); xAllTickets.push(xExtractCleanData(t)); found++; } });
+                        if (tickets.length < pageSize) hasMore = false; else page++;
+                        await xSleep(300);
+                    }
+                }
+                xLog(`ticket ${id} → ${found} record(s)`, found > 0 ? 'success' : 'error');
+            }
+            xUpdateProgress(ticketIds.length, ticketIds.length, 'complete');
+        } else {
+            let page = 1, hasMore = true, totalTickets = 0;
+            while (hasMore) {
+                let url = `${apiUrl}?pageNumber=${page}&pageSize=${pageSize}`;
+                if (filterType === 'created') { if (fromDate) url += `&startDate=${fromDate}`; if (toDate) url += `&endDate=${toDate}`; }
+                else { if (fromDate) url += `&TicketClosedAtFrom=${fromDate}`; if (toDate) url += `&TicketClosedAtTo=${toDate}`; }
+                xLog(`fetching page ${page}…`);
+                const { tickets, totalCount } = await xFetchTicketsPage(url, bearerToken);
+                if (totalCount) totalTickets = totalCount;
+                if (tickets.length === 0) { xLog('no more tickets.'); hasMore = false; }
+                else {
+                    tickets.forEach(t => xAllTickets.push(xExtractCleanData(t)));
+                    xLog(`page ${page} ok · +${tickets.length} · total ${xAllTickets.length}`, 'success');
+                    xUpdateProgress(xAllTickets.length, totalTickets, `page ${page} · ${xAllTickets.length} records`);
+                    if (tickets.length < pageSize) hasMore = false;
+                    page++; await xSleep(800);
+                }
+            }
+        }
+        if (xAllTickets.length > 0) {
+            const summary = xBuildFilterSummary(ticketIds, filterType, fromDateInput, toDateInput);
+            xDownloadReport(xAllTickets, fileTag, summary);
+            xShowStatus(`export complete — ${xAllTickets.length} records.`, 'success');
+            document.getElementById('xRecChip').textContent = `${xAllTickets.length} records`;
+            xLog(`report written: Tickets_${fileTag}.xls`, 'success');
+        } else { xShowStatus('no records matched.', 'error'); xLog('0 records matched.', 'error'); }
+    } catch (error) { xLog(`ERROR: ${error.message}`, 'error'); xShowStatus(error.message, 'error'); }
+    finally { xIsDownloading = false; xSetRunning(false); document.getElementById('xDownloadBtn').disabled = false; }
+}
+function xDownloadReport(data, fileTag, summaryRows) {
+    const columns = Object.entries(X_ORDERED_COLUMNS);
+    let html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><head><meta charset="UTF-8">`;
+    html += `<style>
+        td { white-space: nowrap; font-family: Calibri, Arial, sans-serif; font-size: 11pt; padding: 4px 8px; border: 1px solid #d1d5db; vertical-align: middle; }
+        .title { font-size: 16pt; font-weight: bold; color: #111827; border: none; padding: 0 0 8px 0; border-bottom: 3px solid #111827; }
+        .label { font-weight: bold; color: #374151; background: #f3f4f6; width: 160px; mso-number-format:"\\@"; }
+        .value { color: #111827; background: #ffffff; mso-number-format:"\\@"; }
+        .hdr { background: #1f2937; color: #ffffff; font-weight: bold; text-align: left; padding: 8px 10px; border: 1px solid #111827; white-space: nowrap; font-size: 11pt; }
+        .hdr.c-id { background: #1e40af; } .hdr.c-cat { background: #065f46; } .hdr.c-loc { background: #92400e; } .hdr.c-pri { background: #be185d; } .hdr.c-desc { background: #374151; } .hdr.c-status { background: #6b21a8; } .hdr.c-date { background: #b45309; } .hdr.c-tenant { background: #0369a1; } .hdr.c-esc { background: #b91c1c; }
+        td.c-id { background: #eff6ff; color: #1e3a8a; font-weight: 600; mso-number-format:"0"; }
+        td.c-cat { background: #ecfdf5; color: #065f46; font-weight: 500; mso-number-format:"\\@"; }
+        td.c-loc { background: #fffbeb; color: #92400e; font-weight: 500; mso-number-format:"\\@"; }
+        td.c-pri { background: #fdf2f8; color: #9d174d; font-weight: 600; mso-number-format:"\\@"; }
+        td.c-desc { background: #f9fafb; color: #111827; mso-number-format:"\\@"; }
+        td.c-status { background: #f5f3ff; color: #5b21b6; font-weight: 600; mso-number-format:"\\@"; }
+        td.c-date { background: #fffbeb; color: #92400e; mso-number-format:"\\@"; }
+        td.c-tenant { background: #f0f9ff; color: #075985; font-weight: 500; mso-number-format:"\\@"; }
+        td.c-esc { background: #fef2f2; color: #991b1b; font-weight: 700; mso-number-format:"\\@"; }
+        td.plain { mso-number-format:"\\@"; background: #ffffff; color: #111827; }
+    </style></head><body><table>`;
+    html += `<tr><td class="title">TICKET DATA REPORT</td></tr>`;
+    summaryRows.forEach(([l, v]) => { html += `<tr><td class="label">${xEscapeHtml(l)}</td><td class="value">${xEscapeHtml(v)}</td></tr>`; });
+    html += `<tr><td class="label">Total Records</td><td class="value">${data.length}</td></tr>`;
+    html += `<tr><td style="border:none; height:10px; background:transparent;"></td></tr>`;
+    html += `<tr>` + columns.map(([name, col]) => `<td class="hdr ${col.cls}">${xEscapeHtml(name)}</td>`).join('') + `</tr>`;
+    data.forEach(row => { html += `<tr>` + columns.map(([name, col]) => { const val = row[name] === undefined || row[name] === null ? '' : row[name]; const cls = col.cls ? col.cls : 'plain'; return `<td class="${cls}">${xEscapeHtml(val)}</td>`; }).join('') + `</tr>`; });
+    html += `</table></body></html>`;
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url; link.download = `Tickets_${fileTag}.xls`; link.style.visibility = 'hidden';
+    document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+}
+renderNotes(); renderAssign();
+xLog('console ready. configure filters and run export.');
+</script>
+
+<script>
+/* ============================================================
+   ONE-FILE TICKET TOOL EMBEDDER / SHARED TOKEN LAUNCHER
+   + WHITE-THEME OVERRIDE (matches Export Console)
+   ============================================================ */
+(function () {
+    const TOKEN_KEY = "diag_ticket_token";
+    const TOOL_SRC_KEY = "embedded_ticket_tool_source_v1";
+
+    const shared = document.getElementById("sharedToken");
+    const stateEl = document.getElementById("sharedTokenState");
+    const expEl = document.getElementById("sharedTokenExp");
+    const xb = document.getElementById("xBearerToken");
+
+    const modal = document.getElementById("ttModal");
+    const frame = document.getElementById("ttFrame");
+    const hint = document.getElementById("ttTokenHint");
+    const toolBody = document.querySelector("#ttModal .tt-body");
+    const importInput = document.getElementById("ttImportFile");
+
+    if (!shared || !stateEl || !expEl || !modal || !frame || !hint || !toolBody || !importInput) return;
+
+    let tokenExp = null;
+    let childReady = false;
+    let readyTimer = null;
+    let diag = null;
+    let inputTimer = null;
+
+    function escapeHtml(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function decodeExp(t) {
+        try {
+            const p = String(t || "").split(".");
+            if (p.length < 2) return null;
+            const b = p[1].replace(/-/g, "+").replace(/_/g, "/");
+            const json = decodeURIComponent(atob(b).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+            return JSON.parse(json).exp || null;
+        } catch (e) { return null; }
+    }
+
+    function fmtDur(ms) {
+        if (ms < 0) ms = 0;
+        const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+        const p = n => String(n).padStart(2, "0");
+        if (h) return h + "h " + p(m) + "m";
+        if (m) return m + "m " + p(ss) + "s";
+        return ss + "s";
+    }
+
+    function getToken() { return (shared.value || "").trim(); }
+    function setHint(text, cls) { hint.textContent = "token: " + text; hint.className = "chip " + (cls || ""); }
+
+    function updateUI() {
+        const t = getToken();
+        if (!t) { stateEl.textContent = "no token"; stateEl.className = "token-state muted"; expEl.textContent = "—"; return; }
+        if (!tokenExp) { stateEl.textContent = "token set"; stateEl.className = "token-state warn"; expEl.textContent = "unknown"; return; }
+        const rem = tokenExp * 1000 - Date.now();
+        if (rem <= 0) { stateEl.textContent = "EXPIRED"; stateEl.className = "token-state err"; expEl.textContent = "expired"; }
+        else { stateEl.textContent = "valid"; stateEl.className = "token-state ok"; expEl.textContent = "in " + fmtDur(rem); }
+    }
+
+    function storeToken() {
+        try {
+            const t = getToken();
+            if (t) localStorage.setItem(TOKEN_KEY, t);
+            else localStorage.removeItem(TOKEN_KEY);
+        } catch (e) {}
+    }
+
+    function syncExport() { if (xb) xb.value = getToken(); }
+
+    function ensureDiag() {
+        if (diag) return diag;
+        diag = document.createElement("div");
+        diag.className = "tt-diag";
+        toolBody.appendChild(diag);
+        return diag;
+    }
+    function hideDiag() { if (diag) diag.classList.remove("show"); }
+    function showDiag(title, lines) {
+        const d = ensureDiag();
+        d.classList.add("show");
+        d.innerHTML = `
+            <div class="tt-diag-card">
+                <div class="tt-diag-title">${escapeHtml(title)}</div>
+                <div class="tt-diag-lines">${(lines || []).map(escapeHtml).join("\n")}</div>
+                <div class="tt-diag-actions">
+                    <button class="btn btn-primary" onclick="ttRetry()">Retry / Reload Tool</button>
+                    <button class="btn btn-primary" onclick="ttImportClick()">Import ticket-tool.html</button>
+                    <button class="btn btn-primary" onclick="ttDownloadOneFile()">Download one-file version</button>
+                    <button class="btn btn-danger" onclick="closeTicketTool()">Close</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function isPlaceholder(src) {
+        return !src || (src.length < 5000 && /PASTE YOUR ENTIRE WORKING/i.test(src));
+    }
+    function getToolSource() {
+        const tpl = document.getElementById("toolSource");
+        let src = tpl ? (tpl.innerHTML || "") : "";
+        if (!isPlaceholder(src)) return src;
+        try { src = localStorage.getItem(TOOL_SRC_KEY) || ""; } catch (e) { src = ""; }
+        return src || "";
+    }
+    function storeToolSource(src) { try { localStorage.setItem(TOOL_SRC_KEY, src); } catch (e) {} }
+
+    /* ---- white-theme override injected into the embedded tool ---- */
+    function themeOverrideCSS() {
+        return [
+            ':root{--bg:#e9edf2!important;--panel:#ffffff!important;--panel2:#f8fafc!important;--line:#e2e8f0!important;--line2:#cbd5e1!important;--txt:#0f172a!important;--txt2:#475569!important;--txt3:#94a3b8!important;--acc:#0891b2!important;--acc2:#0e7490!important;--accDim:#cffafe!important;--warn:#b45309!important;--err:#dc2626!important;--ok:#059669!important;--mono:"Segoe UI",Inter,Roboto,Arial,sans-serif!important}',
+            'html,body{background:#e9edf2!important;color:#0f172a!important}',
+            'body{font-family:"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif!important;font-size:13px!important;line-height:1.45!important}',
+            '::selection{background:#0891b2!important;color:#fff!important}',
+            '.wrap{max-width:none!important;padding:14px!important;gap:12px!important}',
+            '.card{background:#fff!important;border:1px solid #e2e8f0!important;border-radius:10px!important;padding:14px!important;box-shadow:0 1px 4px rgba(15,23,42,.08)!important}',
+            '.sec{font-size:12px!important;font-weight:800!important;letter-spacing:.6px!important;text-transform:uppercase!important;color:#0e7490!important;border-left:3px solid #0891b2!important;padding-left:9px!important;margin:0 0 12px!important}',
+            'label{font-size:11px!important;font-weight:700!important;letter-spacing:.4px!important;text-transform:uppercase!important;color:#475569!important;margin-bottom:4px!important}',
+            'input,select,textarea{background:#fff!important;color:#0f172a!important;border:1px solid #cbd5e1!important;border-radius:8px!important;padding:8px 10px!important;font-size:13px!important;font-family:inherit!important;outline:none!important}',
+            'input:focus,select:focus,textarea:focus{border-color:#0891b2!important;box-shadow:0 0 0 3px rgba(8,145,178,.16)!important}',
+            'input::placeholder,textarea::placeholder{color:#94a3b8!important}',
+            'input[readonly]{background:#f8fafc!important;color:#475569!important}',
+            'textarea{min-height:64px!important;resize:vertical!important;font-family:Consolas,monospace!important;font-size:12.5px!important}',
+            'select{cursor:pointer!important}',
+            '.btn{background:#fff!important;color:#0f172a!important;border:1px solid #cbd5e1!important;border-radius:8px!important;padding:9px 16px!important;font-size:12.5px!important;font-weight:700!important;text-transform:uppercase!important;cursor:pointer!important;transition:all .15s!important}',
+            '.btn:hover{border-color:#0891b2!important;color:#0e7490!important;background:#f1f5f9!important}',
+            '.btn.primary{background:linear-gradient(180deg,#06b6d4,#0891b2)!important;color:#fff!important;border:none!important;box-shadow:0 2px 8px rgba(8,145,178,.3)!important}',
+            '.btn.primary:hover{background:linear-gradient(180deg,#22c3dd,#0aa0c6)!important;color:#fff!important}',
+            '.btn.alt{background:#ecfeff!important;color:#0e7490!important;border:1px solid #a5f3fc!important}',
+            '.btn.alt:hover{background:#cffafe!important;border-color:#0891b2!important;color:#0e7490!important}',
+            '.btn.warn{background:#fffbeb!important;color:#b45309!important;border:1px solid #fde68a!important}',
+            '.btn.warn:hover{background:#fef3c7!important}',
+            '.btn.danger{background:#fef2f2!important;color:#b91c1c!important;border:1px solid #fecaca!important}',
+            '.btn.danger:hover{background:#fee2e2!important}',
+            '.btn.sm{padding:6px 12px!important;font-size:11.5px!important}',
+            '.btn:disabled{opacity:.45!important;cursor:not-allowed!important}',
+            '.muted{color:#94a3b8!important}.small{font-size:11px!important}',
+            '.strip{gap:8px!important}',
+            '.chip{background:#ecfeff!important;border:1px solid #a5f3fc!important;color:#0e7490!important;border-radius:12px!important;padding:3px 11px!important;font-size:11px!important;font-weight:700!important}',
+            '.chip.cy{background:#f0f9ff!important;border-color:#bae6fd!important;color:#0369a1!important}',
+            '.tokrow{display:none!important}',
+            '.led{width:9px!important;height:9px!important;border-radius:50%!important;background:#94a3b8!important}',
+            '.led.ready{background:#059669!important;box-shadow:0 0 7px rgba(5,150,105,.6)!important}',
+            '.led.load{background:#b45309!important;box-shadow:0 0 7px rgba(180,83,9,.5)!important}',
+            '.led.err{background:#dc2626!important;box-shadow:0 0 7px rgba(220,38,38,.5)!important}',
+            '.tabs{gap:8px!important}',
+            '.tab{background:#fff!important;color:#475569!important;border:1px solid #cbd5e1!important;border-radius:8px!important;padding:9px 18px!important;font-size:12.5px!important;font-weight:800!important;text-transform:uppercase!important;cursor:pointer!important}',
+            '.tab:hover{color:#0f172a!important;border-color:#94a3b8!important}',
+            '.tab.active{background:#0891b2!important;border-color:#0891b2!important;color:#fff!important;box-shadow:0 2px 8px rgba(8,145,178,.35)!important}',
+            '.hidden{display:none!important}',
+            '#log{min-height:240px!important;max-height:46dvh!important;background:#f8fafc!important;color:#0f172a!important;border:1px solid #e2e8f0!important;border-radius:8px!important;font-family:Consolas,monospace!important;font-size:12.5px!important}',
+            '.formGrid{grid-template-columns:1fr 1fr!important;gap:14px!important}',
+            '.ff{min-width:0!important;margin-bottom:2px!important}',
+            '.drop{background:#f8fafc!important;border:1.5px dashed #cbd5e1!important;border-radius:8px!important;padding:12px!important;color:#475569!important;min-height:46px!important}',
+            '.drop.drag{border-color:#0891b2!important;background:#ecfeff!important;color:#0e7490!important}',
+            '.preview{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))!important;gap:6px!important;margin-top:8px!important}',
+            '.tile{background:#fff!important;border:1px solid #cbd5e1!important;border-radius:8px!important;min-height:64px!important}',
+            '.tile img{height:64px!important}',
+            '.tile .acts button{width:18px!important;height:18px!important;border-radius:50%!important;border:1px solid #fecaca!important;background:#fff!important;color:#dc2626!important;cursor:pointer!important}',
+            '.tile .acts button:hover{background:#dc2626!important;color:#fff!important}',
+            '.logBox{background:#f8fafc!important;border:1px solid #e2e8f0!important;border-radius:8px!important}',
+            '.logRow{border-bottom:1px solid #e2e8f0!important;color:#475569!important;font-size:12px!important;grid-template-columns:90px 100px 1fr auto!important;gap:8px!important;padding:5px 3px!important}',
+            '.logRow b{color:#0e7490!important}',
+            '.logRow .desc{color:#475569!important}',
+            '#scResult{background:#ecfdf5!important;border:1px solid #a7f3d0!important;border-radius:8px!important;padding:4px 10px!important}',
+            '#scTicketNo{color:#047857!important;font-size:14px!important;font-weight:900!important;cursor:pointer!important}',
+            '.lockRow{gap:6px!important;margin:6px 0 10px!important}',
+            '.lockChk{background:#f8fafc!important;border:1px solid #e2e8f0!important;color:#475569!important;border-radius:6px!important;padding:3px 9px!important;font-size:11px!important;cursor:pointer!important}',
+            '.filterInput{font-size:12px!important;margin-bottom:4px!important}',
+            '.bulkbar{gap:8px!important}',
+            '.modesw{gap:8px!important}',
+            '.modesw .btn.on{background:#0891b2!important;color:#fff!important;border-color:#0891b2!important;box-shadow:0 2px 8px rgba(8,145,178,.25)!important}',
+            '.bulktools{gap:8px!important}',
+            '.bulktools .grp{background:#f8fafc!important;border:1px solid #e2e8f0!important;border-radius:8px!important;padding:4px 8px!important;gap:6px!important}',
+            '.bulktools .grp>span{color:#94a3b8!important;font-size:10px!important;font-weight:800!important;text-transform:uppercase!important}',
+            '.bprog{font-size:12px!important;color:#475569!important}',
+            '.bprog b{color:#0e7490!important}',
+            '.banner.red{background:#fef2f2!important;border:1px solid #fecaca!important;color:#b91c1c!important}',
+            '.banner.amber{background:#fffbeb!important;border:1px solid #fde68a!important;color:#b45309!important}',
+            '.gridwrap{background:#fff!important;border:1px solid #e2e8f0!important;border-radius:10px!important;min-height:240px!important;max-height:50dvh!important}',
+            'table.bgrid{font-size:12.5px!important;font-family:Consolas,monospace!important;table-layout:fixed!important;width:100%!important;border-collapse:separate!important;border-spacing:0!important}',
+            'table.bgrid th,table.bgrid td{border-bottom:1px solid #e2e8f0!important;border-right:1px solid #e2e8f0!important;padding:0!important;vertical-align:top!important}',
+            'table.bgrid th{background:#f1f5f9!important;color:#475569!important;font-size:10px!important;font-weight:800!important;text-transform:uppercase!important;position:sticky!important;top:0!important;z-index:2!important;padding:5px 6px!important;text-align:left!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}',
+            'table.bgrid th.req{color:#0e7490!important}',
+            'table.bgrid th.eng{background:#0891b2!important;color:#fff!important}',
+            'table.bgrid td{height:30px!important}',
+            'table.bgrid td.idx{width:30px!important;text-align:center!important;color:#94a3b8!important;font-size:11px!important;background:#f8fafc!important}',
+            'table.bgrid input,table.bgrid textarea{border:0!important;border-radius:0!important;background:transparent!important;color:#0f172a!important;font:inherit!important;font-size:12.5px!important;padding:5px 6px!important;height:100%!important;width:100%!important;resize:none!important}',
+            'table.bgrid input:focus,table.bgrid textarea:focus{background:#ecfeff!important;box-shadow:inset 0 0 0 1px #0891b2!important}',
+            'table.bgrid textarea{min-height:30px!important;line-height:1.3!important}',
+            'table.bgrid td.engcell{padding:5px 6px!important;color:#0f172a!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}',
+            'table.bgrid td.engcell.no{color:#0e7490!important;font-weight:900!important}',
+            'table.bgrid td.res-ok{color:#059669!important;font-weight:800!important}',
+            'table.bgrid td.res-warn{color:#b45309!important;font-weight:800!important}',
+            'table.bgrid td.res-err{color:#dc2626!important;font-weight:800!important}',
+            '.bfixed{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important;gap:8px!important}',
+            '.reviewmodal{background:rgba(15,23,42,.45)!important;backdrop-filter:blur(3px)!important}',
+            '.reviewpanel{background:#fff!important;border:1px solid #cbd5e1!important;border-radius:12px!important;box-shadow:0 20px 60px rgba(15,23,42,.25)!important}',
+            '.reviewhead{background:#f8fafc!important;border-bottom:1px solid #e2e8f0!important;padding:12px!important}',
+            '.reviewbody{background:#f8fafc!important;padding:12px!important}',
+            '.rcard{background:#fff!important;border:1px solid #e2e8f0!important;border-radius:10px!important;padding:10px!important}',
+            '.rcard h4{color:#0f172a!important;font-size:13px!important;margin:0 0 8px!important}',
+            '.rstatus{font-weight:900!important;text-transform:uppercase!important}',
+            '.r-ok{color:#059669!important}.r-fixed{color:#0e7490!important}.r-need,.r-warn{color:#b45309!important}.r-block{color:#dc2626!important}',
+            '.rfields{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))!important;gap:6px!important;font-size:12.5px!important}',
+            '.rfield{border-bottom:1px solid #e2e8f0!important;padding:4px 0!important;color:#0f172a!important}',
+            '.rfield b{color:#94a3b8!important;font-size:10px!important;text-transform:uppercase!important}',
+            '.rfield span{word-break:break-word!important}',
+            '.rfield textarea{width:100%!important;min-height:42px!important;margin-top:4px!important;font-family:Consolas,monospace!important;background:#fff!important;border:1px solid #cbd5e1!important;border-radius:8px!important;color:#0f172a!important;padding:6px 8px!important}',
+            '.rmsgs{margin-top:6px!important;font-size:11px!important;color:#b45309!important}',
+            '.rimgs{gap:6px!important;margin-top:8px!important}',
+            '.rthumb{width:64px!important;height:64px!important;border:1px solid #cbd5e1!important;border-radius:8px!important;background:#fff!important}',
+            '.rthumb label{background:rgba(15,23,42,.72)!important;color:#fff!important;font-size:9px!important}',
+            '.rthumb.excluded{opacity:.35!important}',
+            '.rthumb.add{background:#ecfeff!important;color:#0e7490!important;border:1.5px dashed #cbd5e1!important}',
+            '.rthumb .rm{background:#fff!important;color:#dc2626!important;border:1px solid #fecaca!important;border-radius:50%!important}',
+            '.rthumb .rm:hover{background:#dc2626!important;color:#fff!important}',
+            '.imgcell{padding:3px!important}',
+            '.imgpick{background:#f8fafc!important;border:1.5px dashed #cbd5e1!important;border-radius:6px!important;padding:3px!important;min-height:30px!important;cursor:pointer!important}',
+            '.imgpick:hover{border-color:#0891b2!important;background:#ecfeff!important}',
+            '.gthumb{width:30px!important;height:30px!important;border:1px solid #cbd5e1!important;border-radius:5px!important;background:#fff!important}',
+            '.gthumb.excluded{opacity:.35!important}',
+            '.gthumb .x{background:rgba(255,255,255,.92)!important;color:#dc2626!important;border-left:1px solid #fecaca!important;border-bottom:1px solid #fecaca!important}',
+            '.gthumb .x:hover{background:#dc2626!important;color:#fff!important}',
+            '.badge{border:1px solid #cbd5e1!important;background:#f8fafc!important;color:#475569!important;border-radius:6px!important;padding:2px 6px!important;font-size:10px!important;font-weight:900!important;text-transform:uppercase!important}',
+            '.badge.ok{background:#ecfdf5!important;color:#059669!important;border-color:#a7f3d0!important}',
+            '.badge.fixed{background:#ecfeff!important;color:#0e7490!important;border-color:#a5f3fc!important}',
+            '.badge.default{background:#f8fafc!important;color:#475569!important;border-color:#cbd5e1!important}',
+            '.badge.warn,.badge.need{background:#fffbeb!important;color:#b45309!important;border-color:#fde68a!important}',
+            '.badge.blocked{background:#fef2f2!important;color:#b91c1c!important;border-color:#fecaca!important}',
+            '.badge.blank{background:#f8fafc!important;color:#94a3b8!important;border-color:#e2e8f0!important}',
+            '.toast{background:#fff!important;color:#0f172a!important;border:1px solid #e2e8f0!important;border-left:4px solid #059669!important;border-radius:10px!important;box-shadow:0 12px 34px rgba(15,23,42,.18)!important;font-size:13px!important;font-weight:700!important}',
+            '.toast.error{border-left-color:#dc2626!important}',
+            '.toast.warn{border-left-color:#f59e0b!important}',
+            '@media(max-width:860px){.formGrid{grid-template-columns:1fr!important}}'
+        ].join("\n");
+    }
+
+    function bridgeLines() {
+        return [
+            "(function(){",
+            "var inp=document.getElementById('token');",
+            "function send(type,extra){var msg=Object.assign({type:type},extra||{});try{if(parent&&parent!==window)parent.postMessage(msg,'*');}catch(e){}try{if(opener)opener.postMessage(msg,'*');}catch(e){}}",
+            "function apply(t){t=String(t||'').trim();if(!inp)return;if(inp.value===t){send('TT_ACK');return;}inp.value=t;try{inp.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}send('TT_ACK');}",
+            "if(window.self!==window.top){try{var st=document.createElement('style');st.textContent='.tokrow{display:none!important}';document.head.appendChild(st);}catch(e){}}",
+            "window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='TT_TOKEN')apply(d.token);});",
+            "window.addEventListener('error',function(ev){send('TT_ERROR',{message:ev.message||'Script error',file:ev.filename||'',line:ev.lineno||0});});",
+            "if(inp){inp.addEventListener('input',function(){send('TT_TOKEN_CHANGED',{token:inp.value.trim()});});}",
+            "setTimeout(function(){",
+            "var missing=[];",
+            "if(!document.getElementById('tabCreate'))missing.push('tabCreate');",
+            "if(!document.getElementById('scCreateBtn'))missing.push('scCreateBtn');",
+            "if(!document.getElementById('upSearch'))missing.push('upSearch');",
+            "if(typeof window.boot!=='function')missing.push('boot()');",
+            "if(typeof window.submitSingleCreate!=='function')missing.push('submitSingleCreate()');",
+            "if(missing.length){send('TT_ERROR',{message:'Embedded Ticket Tool is incomplete. Missing: '+missing.join(', ')});return;}",
+            "var initial=window.__TT_INITIAL_TOKEN||'';",
+            "if(initial)apply(initial);",
+            "send('TT_READY');",
+            "setTimeout(function(){send('TT_READY');},700);",
+            "},80);",
+            "})();"
+        ];
+    }
+
+    function buildSrcDoc(src, token) {
+        src = String(src || "");
+
+        if (!/<html/i.test(src)) {
+            src = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket Tool</title></head><body>' + src + '</body></html>';
+        } else if (!/<meta[^>]*charset/i.test(src)) {
+            if (/<head>/i.test(src)) src = src.replace(/<head>/i, '<head><meta charset="utf-8">');
+            else src = src.replace(/<html[^>]*>/i, m => m + '<head><meta charset="utf-8"></head>');
+        }
+
+        const initial = '<script>window.__TT_INITIAL_TOKEN=' + JSON.stringify(token || '') + ';<\/script>';
+        const theme = '<style id="ttThemeOverride">\n' + themeOverrideCSS() + '\n</style>';
+        const bridge = '<script>\n' + bridgeLines().join('\n') + '\n<\/script>';
+        const inject = initial + theme + bridge;
+
+        if (/<\/body>/i.test(src)) return src.replace(/<\/body>/i, inject + '\n</body>');
+        return src + inject;
+    }
+
+    function postToken() {
+        try { frame.contentWindow.postMessage({ type: "TT_TOKEN", token: getToken() }, "*"); return true; }
+        catch (e) { return false; }
+    }
+    function clearReadyTimer() { if (readyTimer) { clearTimeout(readyTimer); readyTimer = null; } }
+    function waitForReady() {
+        clearReadyTimer();
+        readyTimer = setTimeout(() => {
+            if (!childReady) {
+                setHint("not responding", "err");
+                showDiag(
+                    "Embedded Ticket Tool did not respond",
+                    [
+                        "The tool source was loaded, but it did not send TT_READY.",
+                        "",
+                        "Possible causes:",
+                        "1. The pasted/imported ticket-tool.html is truncated or broken.",
+                        "2. The tool source was pasted inside the wrong script block.",
+                        "3. The tool HTML is not the full working Ticket Tool v7 file.",
+                        "",
+                        "Fix:",
+                        "- Open your known working ticket-tool.html directly in Chrome.",
+                        "- Confirm it shows Create / Update / Bulk tabs.",
+                        "- Then import that exact file again, or paste its full contents into <template id=\"toolSource\">."
+                    ]
+                );
+            }
+        }, 8000);
+    }
+
+    function loadTool(force) {
+        const src = getToolSource();
+        if (!src || isPlaceholder(src)) {
+            childReady = false;
+            setHint("source missing", "err");
+            showDiag(
+                "Ticket Tool source is not embedded yet",
+                [
+                    "This workbench is a one-file container.",
+                    "",
+                    "To make it fully standalone:",
+                    "1. Click Import ticket-tool.html and select your working ticket-tool.html once.",
+                    "2. Then click Download one-file version.",
+                    "",
+                    "Or manually paste the full contents of ticket-tool.html inside:",
+                    "<template id=\"toolSource\"> ... </template>"
+                ]
+            );
+            return;
+        }
+        hideDiag();
+        childReady = false;
+        setHint("loading…", "warn");
+        frame.srcdoc = buildSrcDoc(src, getToken());
+        waitForReady();
+    }
+
+    frame.addEventListener("load", () => { setTimeout(() => { if (!childReady) postToken(); }, 150); });
+
+    window.addEventListener("message", e => {
+        const d = e.data;
+        if (!d || typeof d !== "object") return;
+        try { if (e.source && frame.contentWindow && e.source !== frame.contentWindow) return; } catch (err) {}
+
+        if (d.type === "TT_READY" || d.type === "TT_ACK") {
+            childReady = true; clearReadyTimer(); hideDiag(); setHint("synced", "ok");
+            if (d.type === "TT_READY") postToken();
+            return;
+        }
+        if (d.type === "TT_ERROR") {
+            childReady = false; clearReadyTimer(); setHint("tool error", "err");
+            showDiag("Ticket Tool reported an error", [d.message || "Unknown error", d.file ? "file: " + d.file : "", d.line ? "line: " + d.line : ""].filter(Boolean));
+            return;
+        }
+        if (d.type === "TT_TOKEN_CHANGED") {
+            const t = String(d.token || "").trim();
+            if (getToken() !== t) { shared.value = t; tokenExp = decodeExp(t); updateUI(); storeToken(); syncExport(); }
+        }
+    });
+
+    shared.addEventListener("input", () => {
+        tokenExp = decodeExp(getToken());
+        updateUI(); storeToken(); syncExport();
+        clearTimeout(inputTimer);
+        inputTimer = setTimeout(() => { if (childReady) { postToken(); setHint("synced", "ok"); } }, 350);
+    });
+
+    importInput.addEventListener("change", async e => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (!file) return;
+        try {
+            const text = await file.text();
+            if (!text || text.length < 1000) { showToast("Selected file looks too small", "error"); return; }
+            storeToolSource(text);
+            showToast("Ticket Tool imported. Loading…");
+            loadTool(true);
+        } catch (err) { showToast("Import failed: " + err.message, "error"); }
+    });
+
+    function downloadBlob(name, content, type) {
+        const blob = new Blob([content], { type: type || "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    window.ttRetry = function () { loadTool(true); showToast("Reloading Ticket Tool…"); };
+    window.ttImportClick = function () { importInput.click(); };
+    window.ttDownloadOneFile = function () {
+        const src = getToolSource();
+        if (!src || isPlaceholder(src)) { showToast("Import or paste Ticket Tool source first", "warn"); return; }
+        try {
+            const clone = document.documentElement.cloneNode(true);
+            const tpl = clone.querySelector("#toolSource");
+            if (tpl) tpl.innerHTML = src;
+            const fr = clone.querySelector("#ttFrame");
+            if (fr) { fr.removeAttribute("srcdoc"); fr.setAttribute("src", "about:blank"); }
+            clone.querySelectorAll(".tt-diag").forEach(n => n.remove());
+            const st = clone.querySelector("#sharedToken"); if (st) st.value = "";
+            const xbClone = clone.querySelector("#xBearerToken"); if (xbClone) xbClone.value = "";
+            const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+            downloadBlob("ticket-workbench-one-file.html", html, "text/html;charset=utf-8");
+            showToast("One-file version downloaded");
+        } catch (err) { showToast("Download failed: " + err.message, "error"); }
+    };
+
+    window.openTicketTool = function () {
+        modal.classList.add("open");
+        storeToken(); syncExport();
+        if (childReady) { hideDiag(); postToken(); setHint("synced", "ok"); }
+        else loadTool(true);
+    };
+    window.closeTicketTool = function () { modal.classList.remove("open"); };
+    window.copySharedToken = async function () {
+        const t = getToken(); if (!t) return showToast("No token to copy", "warn");
+        try { await navigator.clipboard.writeText(t); showToast("Token copied"); }
+        catch (e) { shared.select(); document.execCommand("copy"); showToast("Token copied"); }
+    };
+    window.clearSharedToken = function () { shared.value = ""; tokenExp = null; updateUI(); storeToken(); syncExport(); if (childReady) postToken(); showToast("Token cleared", "warn"); };
+    window.applyTokenToTool = function () { storeToken(); syncExport(); loadTool(true); showToast("Token applied to Ticket Tool"); };
+
+    modal.addEventListener("click", e => { if (e.target === modal) window.closeTicketTool(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") window.closeTicketTool(); });
+
+    try { shared.value = localStorage.getItem(TOKEN_KEY) || ""; } catch (e) {}
+    tokenExp = decodeExp(getToken());
+    updateUI(); syncExport(); storeToken();
+    setInterval(updateUI, 1000);
+})();
+</script>
+
+</body>
+</html>
